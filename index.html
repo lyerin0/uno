@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>UNO — AI 대전</title>
+<title>RAGIM GAMES</title>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
   :root{
@@ -19,10 +19,61 @@
     color:#fff; overflow:hidden; user-select:none;
   }
   .num-font{font-family:'Baloo 2','Noto Sans KR',sans-serif;}
+  .screen{display:none; height:100vh; height:100dvh;}
+  .screen.active{display:flex;}
 
-  #game{display:flex; flex-direction:column; height:100vh; height:100dvh; padding:10px 14px;}
+  /* ============================================================
+     메뉴 화면
+  ============================================================ */
+  #menu-screen{flex-direction:column; align-items:center; justify-content:center; gap:36px; padding:20px;}
+  #menu-title{
+    font-family:'Baloo 2',sans-serif; font-weight:800; font-style:italic;
+    font-size:52px; letter-spacing:2px;
+    color:var(--yellow); text-shadow:0 5px 0 rgba(0,0,0,.4);
+  }
+  #menu-sub{opacity:.6; font-size:14px; margin-top:-28px;}
+  #menu-cards{display:flex; gap:24px; flex-wrap:wrap; justify-content:center;}
+  .game-card{
+    width:220px; height:260px; border-radius:20px; cursor:pointer;
+    background:rgba(255,255,255,.06); border:1.5px solid rgba(255,255,255,.15);
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px;
+    transition:transform .15s, background .15s, border-color .15s;
+  }
+  .game-card:hover{transform:translateY(-8px) scale(1.02); background:rgba(255,255,255,.1); border-color:var(--yellow);}
+  .game-card .icon{font-size:64px; line-height:1;}
+  .game-card .name{font-family:'Baloo 2','Noto Sans KR',sans-serif; font-size:26px; font-weight:800;}
+  .game-card .desc{font-size:12.5px; opacity:.65; text-align:center; padding:0 18px; line-height:1.5;}
+  .mini-cards{display:flex;}
+  .mini-card{
+    width:40px; height:58px; border-radius:6px; border:3px solid #fff;
+    box-shadow:0 3px 6px rgba(0,0,0,.4);
+  }
+  .mini-card:nth-child(1){background:var(--red); transform:rotate(-14deg) translateX(6px);}
+  .mini-card:nth-child(2){background:var(--blue); transform:translateY(-6px); z-index:1;}
+  .mini-card:nth-child(3){background:var(--green); transform:rotate(14deg) translateX(-6px);}
+  .mini-board{
+    width:64px; height:64px; border-radius:8px;
+    display:grid; grid-template-columns:repeat(3,1fr); grid-template-rows:repeat(3,1fr); gap:4px;
+    background:transparent;
+  }
+  .mini-board div{background:rgba(255,255,255,.25); border-radius:3px;}
+  .mini-board div.p1{background:var(--blue);} .mini-board div.p2{background:var(--red);}
+  .mini-board div.wall{background:var(--yellow);}
 
-  /* ===== 상단: AI 영역 ===== */
+  .back-btn{
+    position:absolute; top:12px; left:14px; z-index:15;
+    background:rgba(0,0,0,.35); border:1px solid rgba(255,255,255,.25); color:#fff;
+    border-radius:20px; padding:6px 16px; font-size:13px; font-weight:700;
+    font-family:'Noto Sans KR',sans-serif; cursor:pointer;
+  }
+  .back-btn:hover{background:rgba(0,0,0,.55);}
+
+  /* ============================================================
+     UNO
+  ============================================================ */
+  #uno-screen{position:relative;}
+  #game{display:flex; flex-direction:column; height:100%; width:100%; padding:10px 14px;}
+
   #ai-zone{flex:0 0 auto; display:flex; flex-direction:column; align-items:center; gap:6px; min-height:120px;}
   .zone-label{display:flex; align-items:center; gap:8px; font-size:14px; font-weight:700; opacity:.85;}
   .zone-label .badge{background:rgba(255,255,255,.15); border-radius:20px; padding:2px 10px; font-size:12px; font-weight:500;}
@@ -31,14 +82,13 @@
   #ai-hand{display:flex; justify-content:center; height:76px;}
   #ai-hand .cardback{width:52px; height:76px; margin:0 -14px; border-radius:8px; transition:margin .3s;}
 
-  /* ===== 중앙: 테이블 ===== */
   #table-zone{flex:1 1 auto; display:flex; align-items:center; justify-content:center; gap:48px; position:relative;}
   #draw-pile{position:relative; cursor:pointer; transition:transform .15s; width:var(--card-w); height:var(--card-h);}
   #draw-pile:hover{transform:translateY(-4px);}
   #draw-pile .cardback{position:absolute; width:var(--card-w); height:var(--card-h); border-radius:12px;}
   #draw-pile .cardback:nth-child(1){transform:translate(4px,4px);}
   #draw-pile .cardback:nth-child(2){transform:translate(2px,2px);}
-  .pile-label{position:absolute; bottom:-26px; left:50%; transform:translateX(-50%); font-size:12px; opacity:.6; white-space:nowrap;}
+  .pile-label{position:absolute; bottom:-26px; left:50%; transform:translateX(-50%); font-size:12px; opacity:.75; white-space:nowrap;}
   #draw-pile-wrap{position:relative; width:var(--card-w); height:var(--card-h);}
   #discard-wrap{position:relative; width:var(--card-w); height:var(--card-h);}
   #discard-wrap .card{position:absolute; top:0; left:0;}
@@ -64,7 +114,6 @@
   }
   #uno-shout.show span{font-size:80px;}
 
-  /* ===== 하단: 플레이어 영역 ===== */
   #player-zone{flex:0 0 auto; display:flex; flex-direction:column; align-items:center; gap:8px; padding-bottom:6px;}
   #player-hand{
     display:flex; justify-content:center; max-width:100%;
@@ -84,7 +133,6 @@
   #pass-btn:hover{background:rgba(255,255,255,.22);}
   #pass-btn.show{display:block;}
 
-  /* ===== 카드 ===== */
   .card{
     width:var(--card-w); height:var(--card-h); border-radius:12px;
     background:#fff; padding:6px; position:relative;
@@ -115,7 +163,6 @@
   }
   .corner.tl{top:4px; left:7px;} .corner.br{bottom:4px; right:7px; transform:rotate(180deg);}
 
-  /* 와일드(색바꾸기)와 +4를 확실히 구분 */
   .wild-oval{
     position:absolute; width:130%; height:62%; border-radius:50%; transform:rotate(-38deg);
     overflow:hidden; display:grid; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr;
@@ -150,7 +197,6 @@
     box-shadow:0 0 10px rgba(0,0,0,.4); transition:background .3s;
   }
 
-  /* ===== 날아가는 카드 (애니메이션) ===== */
   .fly{
     position:fixed; z-index:50; margin:0 !important; pointer-events:none;
     transition:transform .45s cubic-bezier(.3,.9,.35,1), opacity .45s;
@@ -165,7 +211,6 @@
   }
   #player-hand .card.just-drawn{animation:hand-in .3s ease-out;}
 
-  /* ===== 색상 선택 / 결과 오버레이 ===== */
   .overlay{
     position:fixed; inset:0; background:rgba(0,0,0,.65); z-index:20;
     display:none; align-items:center; justify-content:center;
@@ -184,14 +229,74 @@
   .color-btn:hover{transform:scale(1.08);}
   .color-btn.b-red{background:var(--red);} .color-btn.b-yellow{background:var(--yellow);}
   .color-btn.b-green{background:var(--green);} .color-btn.b-blue{background:var(--blue);}
-  #result-title{font-size:44px; font-style:italic;}
-  #result-sub{opacity:.8; margin:8px 0 22px; font-size:15px;}
+  .result-title{font-size:44px; font-style:italic;}
+  .result-sub{opacity:.8; margin:8px 0 22px; font-size:15px;}
   .primary-btn{
     background:var(--yellow); color:#1b1b1b; border:none; border-radius:28px;
     padding:12px 36px; font-size:16px; font-weight:800; font-family:'Baloo 2','Noto Sans KR',sans-serif;
     cursor:pointer; transition:transform .12s;
   }
   .primary-btn:hover{transform:scale(1.05);}
+  .ghost-btn{
+    background:transparent; color:#fff; border:1.5px solid rgba(255,255,255,.4); border-radius:28px;
+    padding:12px 28px; font-size:15px; font-weight:700; font-family:'Noto Sans KR',sans-serif;
+    cursor:pointer; margin-left:10px;
+  }
+  .ghost-btn:hover{background:rgba(255,255,255,.1);}
+
+  /* ============================================================
+     쿼리도
+  ============================================================ */
+  #quoridor-screen{position:relative; flex-direction:column; align-items:center; padding:12px;}
+  #q-top{display:flex; align-items:center; gap:10px; margin-top:36px;}
+  #q-bottom{display:flex; align-items:center; gap:10px; margin-top:10px; flex-wrap:wrap; justify-content:center;}
+  .q-player-tag{
+    display:flex; align-items:center; gap:8px; font-size:14px; font-weight:700;
+    background:rgba(0,0,0,.3); border-radius:20px; padding:6px 16px;
+  }
+  .q-pawn-dot{width:14px; height:14px; border-radius:50%; border:2px solid #fff;}
+  .q-pawn-dot.p1{background:var(--blue);} .q-pawn-dot.p2{background:var(--red);}
+  .q-walls-left{font-size:12px; opacity:.75; font-weight:500;}
+
+  #q-board-area{flex:1 1 auto; display:flex; align-items:center; justify-content:center; width:100%; min-height:0;}
+  #q-board{position:relative; border-radius:14px; background:rgba(0,0,0,.28); padding:0; box-shadow:0 10px 40px rgba(0,0,0,.4);}
+  .q-cell{
+    position:absolute; background:rgba(255,255,255,.1); border-radius:6px;
+  }
+  .q-cell.goal-p1{background:rgba(0,114,206,.22);}
+  .q-cell.goal-p2{background:rgba(227,36,43,.22);}
+  .q-target{
+    position:absolute; border-radius:50%; background:rgba(43,168,74,.85);
+    border:2px solid #fff; cursor:pointer; z-index:6;
+    transition:transform .12s; box-shadow:0 0 10px rgba(43,168,74,.7);
+  }
+  .q-target:hover{transform:scale(1.25);}
+  @keyframes q-pulse{0%,100%{opacity:.85;}50%{opacity:.45;}}
+  .q-target{animation:q-pulse 1.2s infinite;}
+  .q-pawn{
+    position:absolute; border-radius:50%; border:3px solid #fff; z-index:5;
+    box-shadow:0 4px 10px rgba(0,0,0,.5);
+    transition:left .35s cubic-bezier(.3,.9,.35,1), top .35s cubic-bezier(.3,.9,.35,1);
+  }
+  .q-pawn.p1{background:radial-gradient(circle at 32% 30%, #4aa8ff, var(--blue) 65%);}
+  .q-pawn.p2{background:radial-gradient(circle at 32% 30%, #ff6a6f, var(--red) 65%);}
+  .q-wall{
+    position:absolute; background:linear-gradient(#ffd84d, #e0a400); border-radius:4px; z-index:4;
+    box-shadow:0 2px 6px rgba(0,0,0,.5);
+  }
+  .q-wall.preview-ok{opacity:.55; box-shadow:0 0 10px var(--yellow);}
+  .q-wall.preview-bad{background:#888; opacity:.4;}
+  @keyframes wall-in{0%{transform:scale(1.3); opacity:0;}100%{transform:scale(1); opacity:1;}}
+  .q-wall.just-placed{animation:wall-in .25s ease-out;}
+  .q-slot{position:absolute; z-index:3; cursor:pointer;}
+  #q-msg{
+    position:absolute; top:12px; left:50%; transform:translateX(-50%);
+    background:rgba(0,0,0,.55); border-radius:24px; padding:8px 20px;
+    font-size:14px; font-weight:500; white-space:nowrap;
+    opacity:0; transition:opacity .3s; pointer-events:none; z-index:15;
+  }
+  #q-msg.show{opacity:1;}
+  #q-help{font-size:12px; opacity:.55; text-align:center; line-height:1.6;}
 
   @media (max-width:600px){
     :root{--card-w:66px; --card-h:98px;}
@@ -200,6 +305,10 @@
     #table-zone{gap:24px;}
     #player-hand .card{margin:0 -24px;}
     #uno-shout.show span{font-size:56px;}
+    #menu-title{font-size:38px;}
+    .game-card{width:160px; height:210px;}
+    .game-card .icon{font-size:44px;}
+    .game-card .name{font-size:20px;}
   }
   @media (prefers-reduced-motion:reduce){
     *{transition:none !important; animation:none !important;}
@@ -208,43 +317,84 @@
 </head>
 <body>
 
-<div id="game">
-  <div id="ai-zone">
-    <div class="zone-label">
-      <span class="turn-dot" id="ai-dot"></span>
-      🤖 AI <span class="badge"><span id="ai-count">7</span>장</span>
+<!-- ================= 메뉴 ================= -->
+<div class="screen active" id="menu-screen">
+  <div id="menu-title">RAGIM GAMES</div>
+  <div id="menu-sub">플레이할 게임을 고르세요 · AI와 1:1 대전</div>
+  <div id="menu-cards">
+    <div class="game-card" id="play-uno">
+      <div class="mini-cards"><div class="mini-card"></div><div class="mini-card"></div><div class="mini-card"></div></div>
+      <div class="name">UNO</div>
+      <div class="desc">카드를 먼저 다 내면 승리!<br>+2/+4 반격 스택 룰 적용</div>
     </div>
-    <div id="ai-hand"></div>
-  </div>
-
-  <div id="table-zone">
-    <div id="msg"></div>
-    <div id="uno-shout"><span>UNO!</span></div>
-    <div id="draw-pile-wrap">
-      <div id="draw-pile">
-        <div class="cardback"></div>
-        <div class="cardback"></div>
-        <div class="cardback"></div>
+    <div class="game-card" id="play-quoridor">
+      <div class="mini-board">
+        <div></div><div class="p2"></div><div></div>
+        <div class="wall"></div><div></div><div></div>
+        <div></div><div class="p1"></div><div></div>
       </div>
-      <div class="pile-label">뽑기 (<span id="deck-count">0</span>)</div>
+      <div class="name">쿼리도</div>
+      <div class="desc">벽으로 길을 막으며<br>반대편 끝에 먼저 도착!</div>
     </div>
-    <div id="discard-wrap"></div>
-    <div style="display:flex; flex-direction:column; align-items:center; gap:6px;">
-      <div class="cur-color" id="cur-color"></div>
-      <div style="font-size:11px; opacity:.6;">현재 색</div>
-    </div>
-  </div>
-
-  <div id="player-zone">
-    <button id="pass-btn">패스</button>
-    <div class="zone-label">
-      <span class="turn-dot" id="player-dot"></span>
-      😎 나 <span class="badge"><span id="player-count">7</span>장</span>
-    </div>
-    <div id="player-hand"></div>
   </div>
 </div>
 
+<!-- ================= UNO ================= -->
+<div class="screen" id="uno-screen">
+  <button class="back-btn" data-menu>← 메뉴</button>
+  <div id="game">
+    <div id="ai-zone">
+      <div class="zone-label">
+        <span class="turn-dot" id="ai-dot"></span>
+        🤖 AI <span class="badge"><span id="ai-count">7</span>장</span>
+      </div>
+      <div id="ai-hand"></div>
+    </div>
+
+    <div id="table-zone">
+      <div id="msg"></div>
+      <div id="uno-shout"><span>UNO!</span></div>
+      <div id="draw-pile-wrap">
+        <div id="draw-pile">
+          <div class="cardback"></div>
+          <div class="cardback"></div>
+          <div class="cardback"></div>
+        </div>
+        <div class="pile-label">뽑기</div>
+      </div>
+      <div id="discard-wrap"></div>
+      <div style="display:flex; flex-direction:column; align-items:center; gap:6px;">
+        <div class="cur-color" id="cur-color"></div>
+        <div style="font-size:11px; opacity:.6;">현재 색</div>
+      </div>
+    </div>
+
+    <div id="player-zone">
+      <button id="pass-btn">패스</button>
+      <div class="zone-label">
+        <span class="turn-dot" id="player-dot"></span>
+        😎 나 <span class="badge"><span id="player-count">7</span>장</span>
+      </div>
+      <div id="player-hand"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 쿼리도 ================= -->
+<div class="screen" id="quoridor-screen">
+  <button class="back-btn" data-menu>← 메뉴</button>
+  <div id="q-msg"></div>
+  <div id="q-top">
+    <div class="q-player-tag"><span class="turn-dot" id="q-ai-dot"></span><span class="q-pawn-dot p2"></span>🤖 AI <span class="q-walls-left">벽 <b id="q-ai-walls">10</b></span></div>
+  </div>
+  <div id="q-board-area"><div id="q-board"></div></div>
+  <div id="q-bottom">
+    <div class="q-player-tag"><span class="turn-dot" id="q-my-dot"></span><span class="q-pawn-dot p1"></span>😎 나 <span class="q-walls-left">벽 <b id="q-my-walls">10</b></span></div>
+    <div id="q-help">초록 점 클릭 = 말 이동 · 칸 사이 홈 클릭 = 벽 설치<br>빨간 진영(맨 위 줄)에 먼저 도착하면 승리!</div>
+  </div>
+</div>
+
+<!-- ================= 오버레이 ================= -->
 <div class="overlay" id="color-overlay">
   <div class="panel">
     <h2>색을 선택하세요</h2>
@@ -259,25 +409,52 @@
 
 <div class="overlay" id="result-overlay">
   <div class="panel">
-    <h2 class="num-font" id="result-title">승리!</h2>
-    <div id="result-sub"></div>
+    <h2 class="num-font result-title" id="result-title">승리!</h2>
+    <div class="result-sub" id="result-sub"></div>
     <button class="primary-btn" id="restart-btn">다시 하기</button>
+    <button class="ghost-btn" data-menu>메뉴로</button>
+  </div>
+</div>
+
+<div class="overlay" id="q-result-overlay">
+  <div class="panel">
+    <h2 class="num-font result-title" id="q-result-title">승리!</h2>
+    <div class="result-sub" id="q-result-sub"></div>
+    <button class="primary-btn" id="q-restart-btn">다시 하기</button>
+    <button class="ghost-btn" data-menu>메뉴로</button>
   </div>
 </div>
 
 <script>
+/* ============================================================
+   화면 전환
+============================================================ */
+const $ = id => document.getElementById(id);
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.overlay').forEach(o=>o.classList.remove('show'));
+  $(id).classList.add('active');
+}
+document.querySelectorAll('[data-menu]').forEach(b=>{
+  b.addEventListener('click', ()=> showScreen('menu-screen'));
+});
+$('play-uno').addEventListener('click', ()=>{ showScreen('uno-screen'); window.unoNewGame(); });
+$('play-quoridor').addEventListener('click', ()=>{ showScreen('quoridor-screen'); window.quoridorNewGame(); });
+
+/* ============================================================
+   UNO
+============================================================ */
 (() => {
   const COLORS = ['red','yellow','green','blue'];
   const COLOR_KO = {red:'빨강', yellow:'노랑', green:'초록', blue:'파랑'};
-  const $ = id => document.getElementById(id);
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   let deck = [], discard = [], playerHand = [], aiHand = [];
   let currentColor = null, turn = 'player', locked = false, hasDrawnThisTurn = false;
   let gameOver = false;
   let pending = 0, pendingType = null; // 누적 벌칙 (+2/+4 반격 스택)
+  let session = 0; // 메뉴로 나갔다 오면 이전 게임의 예약된 턴을 무효화
 
-  /* ---------- 덱 ---------- */
   function buildDeck(){
     const d = [];
     for(const c of COLORS){
@@ -303,10 +480,8 @@
     return deck.pop();
   }
 
-  /* ---------- 규칙 ---------- */
   function canPlay(card){
     if(pending > 0){
-      // 벌칙 누적 중: 반격 카드만 낼 수 있음
       if(pendingType==='draw2') return card.value==='draw2' || card.value==='wild4';
       return card.value==='wild4'; // +4에는 +4로만 반격 가능
     }
@@ -315,7 +490,6 @@
     return card.color===currentColor || card.value===top.value;
   }
 
-  /* ---------- 카드 렌더링 ---------- */
   function valueLabel(v){
     return {skip:'🚫', reverse:'🔄', draw2:'+2', wild:'W', wild4:'+4'}[v] || v;
   }
@@ -342,7 +516,6 @@
     const big = document.createElement('div');
     big.className = 'big';
     if(card.value==='wild'){
-      // 색바꾸기 카드: +4와 절대 헷갈리지 않게 라벨 표시
       big.classList.add('wild-label');
       big.textContent = '색바꾸기';
     } else {
@@ -387,10 +560,8 @@
     $('pass-btn').classList.toggle('show', turn==='player' && hasDrawnThisTurn && !locked && !gameOver && pending===0);
   }
 
-  /* ---------- 애니메이션 ---------- */
   const sleep = ms => new Promise(r=>setTimeout(r,ms));
 
-  // node(또는 새로 만든 카드)를 fromRect에서 toRect로 날림
   function fly(node, fromRect, toRect, duration=420){
     if(reducedMotion){ node.remove?.(); return Promise.resolve(); }
     return new Promise(res=>{
@@ -412,15 +583,13 @@
   }
   function rect(el){ return el.getBoundingClientRect(); }
 
-  // 손패 → 버린 더미
   async function animatePlay(card, sourceEl){
     const from = sourceEl ? rect(sourceEl) : rect($('ai-hand'));
     if(sourceEl) sourceEl.style.visibility='hidden';
     const flying = cardEl(card);
     await fly(flying, from, rect($('discard-wrap')));
   }
-  // 뽑기 더미 → 손패 (뒷면으로 날아감)
-  async function animateDraw(toEl, count=1, faceCard=null){
+  async function animateDraw(toEl, count=1){
     const from = rect($('draw-pile'));
     const to = rect(toEl);
     for(let i=0;i<count;i++){
@@ -440,7 +609,6 @@
     if(cards.length) cards[cards.length-1].classList.add('just-played');
   }
 
-  /* ---------- 메시지 ---------- */
   let msgTimer;
   function msg(text, ms=1900){
     const m = $('msg'); m.textContent = text; m.classList.add('show');
@@ -452,12 +620,11 @@
     setTimeout(()=> s.classList.remove('show'), 1400);
   }
 
-  /* ---------- 카드 효과 (2인전 + 반격 스택 룰) ----------
+  /* 카드 효과 (2인전 + 반격 스택 룰)
      · 스킵/리버스: 2인전에서는 둘 다 "상대 턴 건너뛰기" → 'skip'
      · +2: 벌칙 2장 누적. 상대는 +2나 +4로 반격 가능 → 'pending'
      · 와일드+4: 벌칙 4장 누적. 상대는 +4로만 반격 가능 → 'pending'
-     · 반격이 이어지면 벌칙이 계속 쌓이고, 못 막는 쪽이 전부 뽑고 턴을 잃음
-     · 색바꾸기(wild): 색만 바꿈. 아무도 카드를 뽑지 않음 → 'none'  */
+     · 색바꾸기(wild): 색만 바꿈. 아무도 카드를 뽑지 않음 → 'none' */
   function applyEffect(card, byPlayer){
     switch(card.value){
       case 'skip':
@@ -501,15 +668,16 @@
     }, 800);
   }
 
-  /* ---------- 플레이어 턴 ---------- */
   async function playerPlay(idx, sourceEl){
     if(turn!=='player'||locked||gameOver) return;
     const card = playerHand[idx];
     if(!canPlay(card)) return;
     locked = true;
+    const s = session;
 
     if(card.value==='wild'||card.value==='wild4'){
       const chosen = await chooseColor();
+      if(s!==session) return;
       card.color = chosen;
       currentColor = chosen;
     } else {
@@ -518,6 +686,7 @@
 
     playerHand.splice(idx,1);
     await animatePlay(card, sourceEl);
+    if(s!==session) return;
     discard.push(card);
 
     if(card.value==='wild') msg(`색바꾸기 → ${COLOR_KO[currentColor]}!`);
@@ -530,10 +699,12 @@
     render();
     if(effect==='skip'){
       await sleep(900);
+      if(s!==session) return;
       startPlayerTurn();
       msg('한 번 더 내 차례!');
     } else {
       await sleep(effect==='pending' ? 1000 : 500);
+      if(s!==session) return;
       aiTurn();
     }
   }
@@ -549,18 +720,20 @@
   $('draw-pile').addEventListener('click', async ()=>{
     if(turn!=='player'||locked||gameOver||hasDrawnThisTurn) return;
     locked = true;
+    const s = session;
     if(pending>0){
-      // 반격 포기: 누적 벌칙 전부 받고 턴을 잃음
       const n = pending; pending=0; pendingType=null;
       msg(`벌칙 ${n}장을 받았어요... 😢`);
       await dealTo(playerHand, n, false);
       await sleep(800);
+      if(s!==session) return;
       aiTurn();
       return;
     }
     const c = drawCard();
     if(!c){ msg('덱에 카드가 없어요!'); locked=false; return; }
     await animateDraw($('player-hand'));
+    if(s!==session) return;
     playerHand.push(c);
     hasDrawnThisTurn = true;
 
@@ -573,15 +746,16 @@
       msg('낼 수 있는 카드가 없네요... 패스!');
       render();
       markLastDrawn();
-      setTimeout(aiTurn, 1100);
+      setTimeout(()=>{ if(s===session) aiTurn(); }, 1100);
     }
   });
 
   $('pass-btn').addEventListener('click', ()=>{
     if(turn!=='player'||locked||!hasDrawnThisTurn) return;
     locked = true;
+    const s = session;
     render();
-    setTimeout(aiTurn, 400);
+    setTimeout(()=>{ if(s===session) aiTurn(); }, 400);
   });
 
   function chooseColor(){
@@ -598,21 +772,22 @@
     });
   }
 
-  /* ---------- AI 턴 ---------- */
   async function aiTurn(){
     if(gameOver) return;
     turn='ai'; locked=true;
+    const s = session;
     render();
     await sleep(1100);
+    if(s!==session) return;
 
     let playable = aiHand.map((c,i)=>({c,i})).filter(x=>canPlay(x.c));
 
     if(pending>0 && playable.length===0){
-      // AI가 반격 못함: 누적 벌칙 전부 받고 턴을 잃음
       const n = pending; pending=0; pendingType=null;
       msg(`AI가 벌칙 ${n}장을 받았어요! 🎉`);
       await dealTo(aiHand, n, true);
       await sleep(800);
+      if(s!==session) return;
       startPlayerTurn();
       return;
     }
@@ -621,21 +796,23 @@
       const drawn = drawCard();
       if(drawn){
         await animateDraw($('ai-hand'));
+        if(s!==session) return;
         aiHand.push(drawn);
         msg('AI가 카드를 뽑았어요');
         render();
         await sleep(800);
+        if(s!==session) return;
         if(canPlay(drawn)) playable=[{c:drawn, i:aiHand.length-1}];
       }
       if(playable.length===0){
         msg('AI 패스!');
         await sleep(700);
+        if(s!==session) return;
         startPlayerTurn();
         return;
       }
     }
 
-    // AI 전략: 플레이어 카드가 적으면 공격 카드 우선, 아니면 숫자 카드 우선. 와일드는 아껴둠
     const rank = c=>{
       if(pending>0) return c.value==='draw2' ? 0 : 1; // 반격 시 +2 먼저, +4는 아껴둠
       const atk = ['draw2','skip','reverse'].includes(c.value);
@@ -659,6 +836,7 @@
     }
 
     await animatePlay(card, null);
+    if(s!==session) return;
     discard.push(card);
     msg(`AI: ${cardName(card)}` + (card.value==='wild' ? ` → ${COLOR_KO[currentColor]}` : ''));
     if(aiHand.length===1) shoutUno();
@@ -670,15 +848,17 @@
     render();
     if(effect==='skip'){
       await sleep(1100);
+      if(s!==session) return;
       aiTurn();
     } else {
       await sleep(effect==='pending' ? 1000 : 500);
+      if(s!==session) return;
       startPlayerTurn();
     }
   }
 
-  /* ---------- 게임 시작 ---------- */
   function newGame(){
+    session++;
     deck = buildDeck();
     playerHand=[]; aiHand=[]; discard=[];
     gameOver=false; locked=false; hasDrawnThisTurn=false; pending=0; pendingType=null;
@@ -698,7 +878,347 @@
   }
 
   $('restart-btn').addEventListener('click', newGame);
-  newGame();
+  window.unoNewGame = newGame;
+})();
+
+/* ============================================================
+   쿼리도 (Quoridor)
+   · 9×9 판. 나(파랑)는 맨 아래에서 시작해 맨 윗줄 도착이 목표,
+     AI(빨강)는 맨 위에서 시작해 맨 아랫줄 도착이 목표
+   · 매 턴: 말 1칸 이동 또는 벽 1개 설치 (각자 벽 10개)
+   · 벽은 2칸 길이. 상대 길을 완전히 막는 벽은 설치 불가 (경로 보장)
+   · 상대 말과 붙어 있으면 뛰어넘기 가능, 뒤가 막혀 있으면 대각선 이동
+============================================================ */
+(() => {
+  const N = 9;
+  const board = $('q-board');
+  let CELL = 44, GAP = 10;
+  let hWalls, vWalls;          // Set("r,c")
+  let me, ai;                  // {r,c}  me: 아래(파랑, 목표 r=0) / ai: 위(빨강, 목표 r=8)
+  let myWalls, aiWalls;
+  let qTurn, qLock, qOver;
+  let session = 0;
+  let lastWall = null;
+
+  const key = (r,c)=> r+','+c;
+  const inB = (r,c)=> r>=0 && r<N && c>=0 && c<N;
+  const hasH = (r,c)=> hWalls.has(key(r,c));
+  const hasV = (r,c)=> vWalls.has(key(r,c));
+
+  // 인접 두 칸 사이 이동이 벽으로 막혔는지
+  function blockedMove(r1,c1,r2,c2){
+    if(r2===r1+1) return hasH(r1,c1) || hasH(r1,c1-1);
+    if(r2===r1-1) return hasH(r2,c1) || hasH(r2,c1-1);
+    if(c2===c1+1) return hasV(r1,c1) || hasV(r1-1,c1);
+    if(c2===c1-1) return hasV(r1,c2) || hasV(r1-1,c2);
+    return true;
+  }
+
+  // 뛰어넘기/대각선 포함한 말 이동 후보
+  function pawnMoves(p, opp){
+    const res = [];
+    for(const [dr,dc] of [[1,0],[-1,0],[0,1],[0,-1]]){
+      const r = p.r+dr, c = p.c+dc;
+      if(!inB(r,c) || blockedMove(p.r,p.c,r,c)) continue;
+      if(r===opp.r && c===opp.c){
+        const jr = r+dr, jc = c+dc;
+        if(inB(jr,jc) && !blockedMove(r,c,jr,jc)){
+          res.push({r:jr, c:jc});
+        } else {
+          const sides = dr!==0 ? [[0,1],[0,-1]] : [[1,0],[-1,0]];
+          for(const [sr,sc] of sides){
+            const tr = r+sr, tc = c+sc;
+            if(inB(tr,tc) && !blockedMove(r,c,tr,tc) && !(tr===p.r && tc===p.c)) res.push({r:tr, c:tc});
+          }
+        }
+      } else res.push({r,c});
+    }
+    return res;
+  }
+
+  // 목표 줄까지 최단거리 BFS (벽만 고려)
+  function bfs(start, goalRow){
+    const dist = Array.from({length:N}, ()=>Array(N).fill(-1));
+    const prev = {};
+    const q = [[start.r, start.c]];
+    dist[start.r][start.c] = 0;
+    let goal = null;
+    while(q.length){
+      const [r,c] = q.shift();
+      if(r===goalRow){ goal=[r,c]; break; }
+      for(const [dr,dc] of [[1,0],[-1,0],[0,1],[0,-1]]){
+        const nr=r+dr, nc=c+dc;
+        if(inB(nr,nc) && dist[nr][nc]<0 && !blockedMove(r,c,nr,nc)){
+          dist[nr][nc] = dist[r][c]+1;
+          prev[key(nr,nc)] = [r,c];
+          q.push([nr,nc]);
+        }
+      }
+    }
+    if(!goal) return {dist: Infinity, next: null};
+    let cur = goal, p = prev[key(cur[0],cur[1])];
+    while(p && !(p[0]===start.r && p[1]===start.c)){ cur=p; p=prev[key(cur[0],cur[1])]; }
+    const next = (goal[0]===start.r && goal[1]===start.c) ? null : {r:cur[0], c:cur[1]};
+    return {dist: dist[goal[0]][goal[1]], next};
+  }
+
+  // 벽 설치 가능 여부 (겹침/교차/경로 차단 검사)
+  function canWall(type, r, c){
+    if(r<0 || r>7 || c<0 || c>7) return false;
+    if(type==='h'){
+      if(hasH(r,c) || hasH(r,c-1) || hasH(r,c+1) || hasV(r,c)) return false;
+      hWalls.add(key(r,c));
+      const ok = bfs(me,0).dist!==Infinity && bfs(ai,8).dist!==Infinity;
+      hWalls.delete(key(r,c));
+      return ok;
+    } else {
+      if(hasV(r,c) || hasV(r-1,c) || hasV(r+1,c) || hasH(r,c)) return false;
+      vWalls.add(key(r,c));
+      const ok = bfs(me,0).dist!==Infinity && bfs(ai,8).dist!==Infinity;
+      vWalls.delete(key(r,c));
+      return ok;
+    }
+  }
+  function placeWall(type, r, c){
+    (type==='h' ? hWalls : vWalls).add(key(r,c));
+    lastWall = {type, r, c};
+  }
+
+  /* ---------- 레이아웃/렌더 ---------- */
+  const px = i => i*(CELL+GAP) + GAP; // 보드 패딩 = GAP
+  function layout(){
+    const area = $('q-board-area');
+    const avail = Math.min(area.clientWidth-8, area.clientHeight-8, 480);
+    GAP = Math.max(7, Math.round(avail*0.022));
+    CELL = Math.floor((avail - GAP*10)/9);
+    const size = CELL*9 + GAP*10;
+    board.style.width = size+'px';
+    board.style.height = size+'px';
+  }
+
+  let qMsgTimer;
+  function qMsg(text, ms=2200){
+    const m = $('q-msg'); m.textContent = text; m.classList.add('show');
+    clearTimeout(qMsgTimer);
+    qMsgTimer = setTimeout(()=> m.classList.remove('show'), ms);
+  }
+
+  function render(){
+    board.innerHTML = '';
+
+    // 칸
+    for(let r=0;r<N;r++) for(let c=0;c<N;c++){
+      const cell = document.createElement('div');
+      cell.className = 'q-cell' + (r===0 ? ' goal-p1' : r===8 ? ' goal-p2' : '');
+      cell.style.left = px(c)+'px'; cell.style.top = px(r)+'px';
+      cell.style.width = CELL+'px'; cell.style.height = CELL+'px';
+      board.appendChild(cell);
+    }
+
+    // 벽
+    const wallEl = (type,r,c)=>{
+      const w = document.createElement('div');
+      w.className = 'q-wall';
+      if(lastWall && lastWall.type===type && lastWall.r===r && lastWall.c===c) w.classList.add('just-placed');
+      if(type==='h'){
+        w.style.left = px(c)+'px'; w.style.top = (px(r)+CELL)+'px';
+        w.style.width = (CELL*2+GAP)+'px'; w.style.height = GAP+'px';
+      } else {
+        w.style.left = (px(c)+CELL)+'px'; w.style.top = px(r)+'px';
+        w.style.width = GAP+'px'; w.style.height = (CELL*2+GAP)+'px';
+      }
+      return w;
+    };
+    hWalls.forEach(k=>{ const [r,c]=k.split(',').map(Number); board.appendChild(wallEl('h',r,c)); });
+    vWalls.forEach(k=>{ const [r,c]=k.split(',').map(Number); board.appendChild(wallEl('v',r,c)); });
+
+    // 벽 설치 슬롯 (내 턴 + 벽이 남았을 때만)
+    if(qTurn==='me' && !qLock && !qOver && myWalls>0){
+      // 가로 홈: 칸 (r,c) 아래
+      for(let r=0;r<8;r++) for(let c=0;c<N;c++){
+        const s = document.createElement('div');
+        s.className = 'q-slot';
+        s.style.left = px(c)+'px'; s.style.top = (px(r)+CELL)+'px';
+        s.style.width = CELL+'px'; s.style.height = GAP+'px';
+        bindSlot(s, 'h', r, c);
+        board.appendChild(s);
+      }
+      // 세로 홈: 칸 (r,c) 오른쪽
+      for(let r=0;r<N;r++) for(let c=0;c<8;c++){
+        const s = document.createElement('div');
+        s.className = 'q-slot';
+        s.style.left = (px(c)+CELL)+'px'; s.style.top = px(r)+'px';
+        s.style.width = GAP+'px'; s.style.height = CELL+'px';
+        bindSlot(s, 'v', r, c);
+        board.appendChild(s);
+      }
+    }
+
+    // 이동 후보 (내 턴)
+    if(qTurn==='me' && !qLock && !qOver){
+      for(const t of pawnMoves(me, ai)){
+        const d = document.createElement('div');
+        d.className = 'q-target';
+        const sz = Math.round(CELL*0.42);
+        d.style.width = sz+'px'; d.style.height = sz+'px';
+        d.style.left = (px(t.c)+(CELL-sz)/2)+'px';
+        d.style.top = (px(t.r)+(CELL-sz)/2)+'px';
+        d.addEventListener('click', ()=> myMove(t));
+        board.appendChild(d);
+      }
+    }
+
+    // 말
+    const pawn = (p, cls)=>{
+      const el = document.createElement('div');
+      el.className = 'q-pawn '+cls;
+      const sz = Math.round(CELL*0.68);
+      el.style.width = sz+'px'; el.style.height = sz+'px';
+      el.style.left = (px(p.c)+(CELL-sz)/2)+'px';
+      el.style.top = (px(p.r)+(CELL-sz)/2)+'px';
+      board.appendChild(el);
+    };
+    pawn(ai, 'p2');
+    pawn(me, 'p1');
+
+    $('q-my-walls').textContent = myWalls;
+    $('q-ai-walls').textContent = aiWalls;
+    $('q-my-dot').classList.toggle('active', qTurn==='me' && !qOver);
+    $('q-ai-dot').classList.toggle('active', qTurn==='ai' && !qOver);
+  }
+
+  /* ---------- 벽 슬롯 (홈 클릭 → 벽 설치, 호버 미리보기) ---------- */
+  function slotTarget(type, r, c){
+    if(type==='h'){
+      if(c<8 && canWall('h',r,c)) return {type,r,c,valid:true};
+      if(c>0 && canWall('h',r,c-1)) return {type,r,c:c-1,valid:true};
+      return {type, r, c:Math.min(c,7), valid:false};
+    } else {
+      if(r<8 && canWall('v',r,c)) return {type,r,c,valid:true};
+      if(r>0 && canWall('v',r-1,c)) return {type,r:r-1,c,valid:true};
+      return {type, r:Math.min(r,7), c, valid:false};
+    }
+  }
+  let previewEl = null;
+  function clearPreview(){ if(previewEl){ previewEl.remove(); previewEl=null; } }
+  function bindSlot(slot, type, r, c){
+    slot.addEventListener('mouseenter', ()=>{
+      clearPreview();
+      const t = slotTarget(type, r, c);
+      const w = document.createElement('div');
+      w.className = 'q-wall ' + (t.valid ? 'preview-ok' : 'preview-bad');
+      if(t.type==='h'){
+        w.style.left = px(t.c)+'px'; w.style.top = (px(t.r)+CELL)+'px';
+        w.style.width = (CELL*2+GAP)+'px'; w.style.height = GAP+'px';
+      } else {
+        w.style.left = (px(t.c)+CELL)+'px'; w.style.top = px(t.r)+'px';
+        w.style.width = GAP+'px'; w.style.height = (CELL*2+GAP)+'px';
+      }
+      board.appendChild(w);
+      previewEl = w;
+    });
+    slot.addEventListener('mouseleave', clearPreview);
+    slot.addEventListener('click', ()=>{
+      clearPreview();
+      const t = slotTarget(type, r, c);
+      if(!t.valid){ qMsg('여기에는 벽을 놓을 수 없어요 (겹침 또는 길 완전 차단)'); return; }
+      placeWall(t.type, t.r, t.c);
+      myWalls--;
+      qLock = true;
+      render();
+      afterMyTurn();
+    });
+  }
+
+  /* ---------- 진행 ---------- */
+  function myMove(t){
+    if(qTurn!=='me' || qLock || qOver) return;
+    qLock = true;
+    me = {r:t.r, c:t.c};
+    render();
+    if(me.r===0){ endQ(true); return; }
+    afterMyTurn();
+  }
+  function afterMyTurn(){
+    qTurn = 'ai';
+    render();
+    const s = session;
+    setTimeout(()=>{ if(s===session) aiPlay(); }, 750);
+  }
+
+  function aiPlay(){
+    if(qOver) return;
+    const myPath = bfs(ai, 8);   // AI 경로
+    const plPath = bfs(me, 0);   // 플레이어 경로
+
+    // 벽 후보 평가: 플레이어 길이는 늘리고 내 길이는 안 늘어나는 벽
+    let bestWall = null, bestScore = 0;
+    if(aiWalls>0){
+      for(let r=0;r<8;r++) for(let c=0;c<8;c++){
+        for(const type of ['h','v']){
+          if(!canWall(type,r,c)) continue;
+          (type==='h'?hWalls:vWalls).add(key(r,c));
+          const npl = bfs(me,0).dist, nmy = bfs(ai,8).dist;
+          (type==='h'?hWalls:vWalls).delete(key(r,c));
+          const score = (npl - plPath.dist) - (nmy - myPath.dist);
+          if(score > bestScore){ bestScore = score; bestWall = {type,r,c}; }
+        }
+      }
+    }
+
+    // 플레이어가 앞서거나 골에 가까우면 벽으로 방해, 아니면 전진
+    const urgent = plPath.dist <= myPath.dist || plPath.dist <= 3;
+    if(bestWall && ((urgent && bestScore>=1) || bestScore>=3)){
+      placeWall(bestWall.type, bestWall.r, bestWall.c);
+      aiWalls--;
+      qMsg('AI가 벽을 설치했어요! 🧱');
+    } else {
+      // 뛰어넘기 포함 이동 후보 중 목표까지 가장 가까워지는 칸 선택
+      const moves = pawnMoves(ai, me);
+      let best = null, bestD = Infinity;
+      for(const m of moves){
+        const d = bfs({r:m.r, c:m.c}, 8).dist;
+        if(d < bestD || (d===bestD && m.r > (best?best.r:-1))){ bestD = d; best = m; }
+      }
+      if(best){ ai = {r:best.r, c:best.c}; }
+    }
+    render();
+    if(ai.r===8){ endQ(false); return; }
+    qTurn = 'me';
+    qLock = false;
+    render();
+  }
+
+  function endQ(iWon){
+    qOver = true;
+    render();
+    setTimeout(()=>{
+      $('q-result-title').textContent = iWon ? '🎉 승리!' : '😵 패배...';
+      $('q-result-title').style.color = iWon ? 'var(--yellow)' : 'var(--red)';
+      $('q-result-sub').textContent = iWon
+        ? '먼저 반대편에 도착했어요! 한 판 더?'
+        : 'AI가 먼저 도착했어요. 벽을 더 전략적으로 써보세요!';
+      $('q-result-overlay').classList.add('show');
+    }, 600);
+  }
+
+  function newGame(){
+    session++;
+    hWalls = new Set(); vWalls = new Set();
+    me = {r:8, c:4}; ai = {r:0, c:4};
+    myWalls = 10; aiWalls = 10;
+    qTurn = 'me'; qLock = false; qOver = false; lastWall = null;
+    $('q-result-overlay').classList.remove('show');
+    layout();
+    render();
+    qMsg('쿼리도 시작! 맨 윗줄에 먼저 도착하세요', 2600);
+  }
+
+  window.addEventListener('resize', ()=>{
+    if($('quoridor-screen').classList.contains('active')){ layout(); render(); }
+  });
+  $('q-restart-btn').addEventListener('click', newGame);
+  window.quoridorNewGame = newGame;
 })();
 </script>
 </body>
