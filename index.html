@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RAGIM GAMES</title>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.2/peerjs.min.js"></script>
 <style>
   :root{
     --red:#E3242B; --yellow:#FFC800; --green:#2BA84A; --blue:#0072CE;
@@ -22,9 +23,7 @@
   .screen{display:none; height:100vh; height:100dvh;}
   .screen.active{display:flex;}
 
-  /* ============================================================
-     메뉴 화면
-  ============================================================ */
+  /* ================= 메뉴 ================= */
   #menu-screen{flex-direction:column; align-items:center; justify-content:center; gap:36px; padding:20px;}
   #menu-title{
     font-family:'Baloo 2',sans-serif; font-weight:800; font-style:italic;
@@ -40,7 +39,6 @@
     transition:transform .15s, background .15s, border-color .15s;
   }
   .game-card:hover{transform:translateY(-8px) scale(1.02); background:rgba(255,255,255,.1); border-color:var(--yellow);}
-  .game-card .icon{font-size:64px; line-height:1;}
   .game-card .name{font-family:'Baloo 2','Noto Sans KR',sans-serif; font-size:26px; font-weight:800;}
   .game-card .desc{font-size:12.5px; opacity:.65; text-align:center; padding:0 18px; line-height:1.5;}
   .mini-cards{display:flex;}
@@ -52,9 +50,8 @@
   .mini-card:nth-child(2){background:var(--blue); transform:translateY(-6px); z-index:1;}
   .mini-card:nth-child(3){background:var(--green); transform:rotate(14deg) translateX(-6px);}
   .mini-board{
-    width:64px; height:64px; border-radius:8px;
+    width:64px; height:64px;
     display:grid; grid-template-columns:repeat(3,1fr); grid-template-rows:repeat(3,1fr); gap:4px;
-    background:transparent;
   }
   .mini-board div{background:rgba(255,255,255,.25); border-radius:3px;}
   .mini-board div.p1{background:var(--blue);} .mini-board div.p2{background:var(--red);}
@@ -68,12 +65,68 @@
   }
   .back-btn:hover{background:rgba(0,0,0,.55);}
 
-  /* ============================================================
-     UNO
-  ============================================================ */
+  /* ================= 공용 오버레이/패널 ================= */
+  .overlay{
+    position:fixed; inset:0; background:rgba(0,0,0,.65); z-index:20;
+    display:none; align-items:center; justify-content:center;
+  }
+  .overlay.show{display:flex;}
+  .overlay.opaque{background:rgba(6,20,16,.97);}
+  .panel{
+    background:#17332c; border:1px solid rgba(255,255,255,.15); border-radius:20px;
+    padding:32px 36px; text-align:center; box-shadow:0 20px 60px rgba(0,0,0,.5);
+    max-width:92vw;
+  }
+  .panel h2{font-family:'Baloo 2','Noto Sans KR',sans-serif; font-size:26px; margin-bottom:18px;}
+  .result-title{font-size:44px; font-style:italic;}
+  .result-sub{opacity:.8; margin:8px 0 22px; font-size:15px; line-height:1.6;}
+  .primary-btn{
+    background:var(--yellow); color:#1b1b1b; border:none; border-radius:28px;
+    padding:12px 36px; font-size:16px; font-weight:800; font-family:'Baloo 2','Noto Sans KR',sans-serif;
+    cursor:pointer; transition:transform .12s;
+  }
+  .primary-btn:hover{transform:scale(1.05);}
+  .primary-btn:disabled{opacity:.4; cursor:default; transform:none;}
+  .ghost-btn{
+    background:transparent; color:#fff; border:1.5px solid rgba(255,255,255,.4); border-radius:28px;
+    padding:11px 26px; font-size:14px; font-weight:700; font-family:'Noto Sans KR',sans-serif;
+    cursor:pointer; margin:6px 4px 0;
+  }
+  .ghost-btn:hover{background:rgba(255,255,255,.1);}
+  .mode-btns{display:flex; flex-direction:column; gap:12px; margin-bottom:14px;}
+  .mode-btns button{
+    background:rgba(255,255,255,.08); border:1.5px solid rgba(255,255,255,.25); color:#fff;
+    border-radius:16px; padding:14px 30px; font-size:16px; font-weight:700;
+    font-family:'Noto Sans KR',sans-serif; cursor:pointer; min-width:240px;
+    transition:background .15s, border-color .15s;
+  }
+  .mode-btns button:hover{background:rgba(255,255,255,.16); border-color:var(--yellow);}
+  #room-code{
+    font-family:'Baloo 2',monospace; font-size:44px; font-weight:800; letter-spacing:10px;
+    color:var(--yellow); margin:6px 0 4px;
+  }
+  #join-input{
+    background:rgba(0,0,0,.35); border:2px solid rgba(255,255,255,.3); color:#fff;
+    border-radius:14px; padding:12px 16px; font-size:26px; font-weight:800; letter-spacing:8px;
+    text-align:center; width:220px; text-transform:uppercase; font-family:'Baloo 2',monospace;
+    outline:none; margin-bottom:14px;
+  }
+  #join-input:focus{border-color:var(--yellow);}
+  .ol-status{font-size:13px; opacity:.7; min-height:20px; margin-top:8px;}
+  @keyframes blink{0%,100%{opacity:.9;}50%{opacity:.35;}}
+  .waiting{animation:blink 1.2s infinite;}
+  .color-grid{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
+  .color-btn{
+    width:88px; height:88px; border-radius:16px; border:3px solid #fff; cursor:pointer;
+    transition:transform .12s; box-shadow:0 4px 10px rgba(0,0,0,.35);
+  }
+  .color-btn:hover{transform:scale(1.08);}
+  .color-btn.b-red{background:var(--red);} .color-btn.b-yellow{background:var(--yellow);}
+  .color-btn.b-green{background:var(--green);} .color-btn.b-blue{background:var(--blue);}
+
+  /* ================= UNO ================= */
   #uno-screen{position:relative;}
   #game{display:flex; flex-direction:column; height:100%; width:100%; padding:10px 14px;}
-
   #ai-zone{flex:0 0 auto; display:flex; flex-direction:column; align-items:center; gap:6px; min-height:120px;}
   .zone-label{display:flex; align-items:center; gap:8px; font-size:14px; font-weight:700; opacity:.85;}
   .zone-label .badge{background:rgba(255,255,255,.15); border-radius:20px; padding:2px 10px; font-size:12px; font-weight:500;}
@@ -102,11 +155,7 @@
     opacity:0; transition:opacity .3s; pointer-events:none; z-index:5;
   }
   #msg.show{opacity:1;}
-
-  #uno-shout{
-    position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
-    pointer-events:none; z-index:6;
-  }
+  #uno-shout{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none; z-index:6;}
   #uno-shout span{
     font-family:'Baloo 2',sans-serif; font-size:0; font-weight:800; font-style:italic;
     color:var(--yellow); text-shadow:0 4px 0 rgba(0,0,0,.4);
@@ -118,8 +167,7 @@
   #player-hand{
     display:flex; justify-content:center; max-width:100%;
     height:calc(var(--card-h) + 22px); align-items:flex-end;
-    overflow-x:auto; overflow-y:hidden; padding:0 10px;
-    scrollbar-width:thin;
+    overflow-x:auto; overflow-y:hidden; padding:0 10px; scrollbar-width:thin;
   }
   #player-hand .card{margin:0 -20px; flex:0 0 auto; transition:transform .15s, box-shadow .15s, margin .3s;}
   #player-hand .card.playable{cursor:pointer;}
@@ -162,7 +210,6 @@
     font-style:italic; font-size:15px; color:#fff; text-shadow:1px 1px 0 rgba(0,0,0,.35);
   }
   .corner.tl{top:4px; left:7px;} .corner.br{bottom:4px; right:7px; transform:rotate(180deg);}
-
   .wild-oval{
     position:absolute; width:130%; height:62%; border-radius:50%; transform:rotate(-38deg);
     overflow:hidden; display:grid; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr;
@@ -176,7 +223,6 @@
   .c-wild .big.wild-label{font-size:13px; font-style:normal; letter-spacing:1px;
     background:rgba(0,0,0,.65); border-radius:12px; padding:4px 10px; text-shadow:none;}
   .c-wild .corner{font-size:12px; font-style:normal;}
-
   .cardback{
     background:#1b1b1b; border:4px solid #fff; box-shadow:0 3px 8px rgba(0,0,0,.35);
     position:relative; overflow:hidden; border-radius:12px;
@@ -191,62 +237,21 @@
     font-size:20px; text-shadow:1px 2px 0 rgba(0,0,0,.5); transform:rotate(-12deg);
   }
   #draw-pile .cardback::after{font-size:30px;}
-
   .cur-color{
     width:26px; height:26px; border-radius:50%; border:3px solid #fff;
     box-shadow:0 0 10px rgba(0,0,0,.4); transition:background .3s;
   }
-
   .fly{
     position:fixed; z-index:50; margin:0 !important; pointer-events:none;
     transition:transform .45s cubic-bezier(.3,.9,.35,1), opacity .45s;
     will-change:transform;
   }
-  @keyframes pop-in{
-    0%{transform:scale(1.25) rotate(-4deg);} 100%{transform:scale(1) rotate(0);}
-  }
+  @keyframes pop-in{0%{transform:scale(1.25) rotate(-4deg);}100%{transform:scale(1) rotate(0);}}
   #discard-wrap .card.just-played{animation:pop-in .25s ease-out;}
-  @keyframes hand-in{
-    0%{transform:translateY(24px); opacity:0;} 100%{transform:translateY(0); opacity:1;}
-  }
+  @keyframes hand-in{0%{transform:translateY(24px); opacity:0;}100%{transform:translateY(0); opacity:1;}}
   #player-hand .card.just-drawn{animation:hand-in .3s ease-out;}
 
-  .overlay{
-    position:fixed; inset:0; background:rgba(0,0,0,.65); z-index:20;
-    display:none; align-items:center; justify-content:center;
-  }
-  .overlay.show{display:flex;}
-  .panel{
-    background:#17332c; border:1px solid rgba(255,255,255,.15); border-radius:20px;
-    padding:32px 36px; text-align:center; box-shadow:0 20px 60px rgba(0,0,0,.5);
-  }
-  .panel h2{font-family:'Baloo 2','Noto Sans KR',sans-serif; font-size:26px; margin-bottom:18px;}
-  .color-grid{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
-  .color-btn{
-    width:88px; height:88px; border-radius:16px; border:3px solid #fff; cursor:pointer;
-    transition:transform .12s; box-shadow:0 4px 10px rgba(0,0,0,.35);
-  }
-  .color-btn:hover{transform:scale(1.08);}
-  .color-btn.b-red{background:var(--red);} .color-btn.b-yellow{background:var(--yellow);}
-  .color-btn.b-green{background:var(--green);} .color-btn.b-blue{background:var(--blue);}
-  .result-title{font-size:44px; font-style:italic;}
-  .result-sub{opacity:.8; margin:8px 0 22px; font-size:15px;}
-  .primary-btn{
-    background:var(--yellow); color:#1b1b1b; border:none; border-radius:28px;
-    padding:12px 36px; font-size:16px; font-weight:800; font-family:'Baloo 2','Noto Sans KR',sans-serif;
-    cursor:pointer; transition:transform .12s;
-  }
-  .primary-btn:hover{transform:scale(1.05);}
-  .ghost-btn{
-    background:transparent; color:#fff; border:1.5px solid rgba(255,255,255,.4); border-radius:28px;
-    padding:12px 28px; font-size:15px; font-weight:700; font-family:'Noto Sans KR',sans-serif;
-    cursor:pointer; margin-left:10px;
-  }
-  .ghost-btn:hover{background:rgba(255,255,255,.1);}
-
-  /* ============================================================
-     쿼리도
-  ============================================================ */
+  /* ================= 쿼리도 ================= */
   #quoridor-screen{position:relative; flex-direction:column; align-items:center; padding:12px;}
   #q-top{display:flex; align-items:center; gap:10px; margin-top:36px;}
   #q-bottom{display:flex; align-items:center; gap:10px; margin-top:10px; flex-wrap:wrap; justify-content:center;}
@@ -257,22 +262,19 @@
   .q-pawn-dot{width:14px; height:14px; border-radius:50%; border:2px solid #fff;}
   .q-pawn-dot.p1{background:var(--blue);} .q-pawn-dot.p2{background:var(--red);}
   .q-walls-left{font-size:12px; opacity:.75; font-weight:500;}
-
   #q-board-area{flex:1 1 auto; display:flex; align-items:center; justify-content:center; width:100%; min-height:0;}
-  #q-board{position:relative; border-radius:14px; background:rgba(0,0,0,.28); padding:0; box-shadow:0 10px 40px rgba(0,0,0,.4);}
-  .q-cell{
-    position:absolute; background:rgba(255,255,255,.1); border-radius:6px;
-  }
+  #q-board{position:relative; border-radius:14px; background:rgba(0,0,0,.28); box-shadow:0 10px 40px rgba(0,0,0,.4);}
+  .q-cell{position:absolute; background:rgba(255,255,255,.1); border-radius:6px;}
   .q-cell.goal-p1{background:rgba(0,114,206,.22);}
   .q-cell.goal-p2{background:rgba(227,36,43,.22);}
   .q-target{
     position:absolute; border-radius:50%; background:rgba(43,168,74,.85);
     border:2px solid #fff; cursor:pointer; z-index:6;
-    transition:transform .12s; box-shadow:0 0 10px rgba(43,168,74,.7);
+    box-shadow:0 0 10px rgba(43,168,74,.7);
+    animation:q-pulse 1.2s infinite;
   }
   .q-target:hover{transform:scale(1.25);}
   @keyframes q-pulse{0%,100%{opacity:.85;}50%{opacity:.45;}}
-  .q-target{animation:q-pulse 1.2s infinite;}
   .q-pawn{
     position:absolute; border-radius:50%; border:3px solid #fff; z-index:5;
     box-shadow:0 4px 10px rgba(0,0,0,.5);
@@ -307,8 +309,8 @@
     #uno-shout.show span{font-size:56px;}
     #menu-title{font-size:38px;}
     .game-card{width:160px; height:210px;}
-    .game-card .icon{font-size:44px;}
     .game-card .name{font-size:20px;}
+    .mode-btns button{min-width:200px;}
   }
   @media (prefers-reduced-motion:reduce){
     *{transition:none !important; animation:none !important;}
@@ -320,14 +322,14 @@
 <!-- ================= 메뉴 ================= -->
 <div class="screen active" id="menu-screen">
   <div id="menu-title">RAGIM GAMES</div>
-  <div id="menu-sub">플레이할 게임을 고르세요 · AI와 1:1 대전</div>
+  <div id="menu-sub">플레이할 게임을 고르세요 · AI · 2인 · 온라인</div>
   <div id="menu-cards">
-    <div class="game-card" id="play-uno">
+    <div class="game-card" data-game="uno">
       <div class="mini-cards"><div class="mini-card"></div><div class="mini-card"></div><div class="mini-card"></div></div>
       <div class="name">UNO</div>
-      <div class="desc">카드를 먼저 다 내면 승리!<br>+2/+4 반격 스택 룰 적용</div>
+      <div class="desc">카드를 먼저 다 내면 승리!<br>+2/+4 반격 스택 룰</div>
     </div>
-    <div class="game-card" id="play-quoridor">
+    <div class="game-card" data-game="quo">
       <div class="mini-board">
         <div></div><div class="p2"></div><div></div>
         <div class="wall"></div><div></div><div></div>
@@ -345,20 +347,17 @@
   <div id="game">
     <div id="ai-zone">
       <div class="zone-label">
-        <span class="turn-dot" id="ai-dot"></span>
-        🤖 AI <span class="badge"><span id="ai-count">7</span>장</span>
+        <span class="turn-dot" id="top-dot"></span>
+        <span id="top-name">🤖 AI</span> <span class="badge"><span id="ai-count">7</span>장</span>
       </div>
       <div id="ai-hand"></div>
     </div>
-
     <div id="table-zone">
       <div id="msg"></div>
       <div id="uno-shout"><span>UNO!</span></div>
       <div id="draw-pile-wrap">
         <div id="draw-pile">
-          <div class="cardback"></div>
-          <div class="cardback"></div>
-          <div class="cardback"></div>
+          <div class="cardback"></div><div class="cardback"></div><div class="cardback"></div>
         </div>
         <div class="pile-label">뽑기</div>
       </div>
@@ -368,12 +367,11 @@
         <div style="font-size:11px; opacity:.6;">현재 색</div>
       </div>
     </div>
-
     <div id="player-zone">
       <button id="pass-btn">패스</button>
       <div class="zone-label">
-        <span class="turn-dot" id="player-dot"></span>
-        😎 나 <span class="badge"><span id="player-count">7</span>장</span>
+        <span class="turn-dot" id="bottom-dot"></span>
+        <span id="bottom-name">😎 나</span> <span class="badge"><span id="player-count">7</span>장</span>
       </div>
       <div id="player-hand"></div>
     </div>
@@ -385,16 +383,61 @@
   <button class="back-btn" data-menu>← 메뉴</button>
   <div id="q-msg"></div>
   <div id="q-top">
-    <div class="q-player-tag"><span class="turn-dot" id="q-ai-dot"></span><span class="q-pawn-dot p2"></span>🤖 AI <span class="q-walls-left">벽 <b id="q-ai-walls">10</b></span></div>
+    <div class="q-player-tag"><span class="turn-dot" id="q-top-dot"></span><span class="q-pawn-dot p2"></span><span id="q-top-name">🤖 AI</span> <span class="q-walls-left">벽 <b id="q-top-walls">10</b></span></div>
   </div>
   <div id="q-board-area"><div id="q-board"></div></div>
   <div id="q-bottom">
-    <div class="q-player-tag"><span class="turn-dot" id="q-my-dot"></span><span class="q-pawn-dot p1"></span>😎 나 <span class="q-walls-left">벽 <b id="q-my-walls">10</b></span></div>
-    <div id="q-help">초록 점 클릭 = 말 이동 · 칸 사이 홈 클릭 = 벽 설치<br>빨간 진영(맨 위 줄)에 먼저 도착하면 승리!</div>
+    <div class="q-player-tag"><span class="turn-dot" id="q-bottom-dot"></span><span class="q-pawn-dot p1"></span><span id="q-bottom-name">😎 나</span> <span class="q-walls-left">벽 <b id="q-bottom-walls">10</b></span></div>
+    <div id="q-help">초록 점 클릭 = 말 이동 · 칸 사이 홈 클릭 = 벽 설치</div>
   </div>
 </div>
 
 <!-- ================= 오버레이 ================= -->
+<div class="overlay" id="mode-overlay">
+  <div class="panel">
+    <h2 id="mode-title">모드 선택</h2>
+    <div class="mode-btns">
+      <button data-pick="ai">🤖 AI 대전</button>
+      <button data-pick="local">👥 같은 기기 2인</button>
+      <button data-pick="online">🌐 온라인 대전</button>
+    </div>
+    <button class="ghost-btn" id="mode-cancel">취소</button>
+  </div>
+</div>
+
+<div class="overlay" id="online-overlay">
+  <div class="panel">
+    <h2>🌐 온라인 대전</h2>
+    <div id="ol-choose">
+      <div class="mode-btns">
+        <button id="ol-create">방 만들기</button>
+        <button id="ol-join-open">코드로 참가하기</button>
+      </div>
+    </div>
+    <div id="ol-host" style="display:none">
+      <div class="result-sub">친구에게 이 코드를 알려주세요</div>
+      <div id="room-code">----</div>
+      <div class="ol-status waiting" id="ol-host-status">친구 접속 대기 중...</div>
+    </div>
+    <div id="ol-join" style="display:none">
+      <div class="result-sub">호스트에게 받은 코드를 입력하세요</div>
+      <input id="join-input" maxlength="4" placeholder="ABCD" autocomplete="off">
+      <br>
+      <button class="primary-btn" id="ol-join-btn">접속</button>
+      <div class="ol-status" id="ol-join-status"></div>
+    </div>
+    <button class="ghost-btn" id="ol-cancel">취소</button>
+  </div>
+</div>
+
+<div class="overlay opaque" id="pass-overlay">
+  <div class="panel">
+    <h2 id="pass-title">🔄 P2 차례!</h2>
+    <div class="result-sub">기기를 넘겨주세요.<br>다른 사람은 화면을 보지 마세요 🙈</div>
+    <button class="primary-btn" id="pass-continue">준비 완료</button>
+  </div>
+</div>
+
 <div class="overlay" id="color-overlay">
   <div class="panel">
     <h2>색을 선택하세요</h2>
@@ -425,107 +468,313 @@
   </div>
 </div>
 
+<div class="overlay" id="alert-overlay">
+  <div class="panel">
+    <h2 id="alert-title">알림</h2>
+    <div class="result-sub" id="alert-sub"></div>
+    <button class="primary-btn" data-menu>메뉴로</button>
+  </div>
+</div>
+
 <script>
 /* ============================================================
-   화면 전환
+   공용 유틸 & 화면 전환
 ============================================================ */
 const $ = id => document.getElementById(id);
+const sleep = ms => new Promise(r=>setTimeout(r,ms));
+const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
 function showScreen(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.querySelectorAll('.overlay').forEach(o=>o.classList.remove('show'));
   $(id).classList.add('active');
 }
-document.querySelectorAll('[data-menu]').forEach(b=>{
-  b.addEventListener('click', ()=> showScreen('menu-screen'));
-});
-$('play-uno').addEventListener('click', ()=>{ showScreen('uno-screen'); window.unoNewGame(); });
-$('play-quoridor').addEventListener('click', ()=>{ showScreen('quoridor-screen'); window.quoridorNewGame(); });
+function showAlert(title, sub){
+  $('alert-title').textContent = title;
+  $('alert-sub').innerHTML = sub;
+  $('alert-overlay').classList.add('show');
+}
 
 /* ============================================================
-   UNO
+   네트워크 (PeerJS) — 모든 게임이 공용으로 사용
+   방 코드 4글자 → peer id "ragim-{게임}-{코드}"
 ============================================================ */
-(() => {
-  const COLORS = ['red','yellow','green','blue'];
-  const COLOR_KO = {red:'빨강', yellow:'노랑', green:'초록', blue:'파랑'};
-  const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const Net = (()=>{
+  let peer=null, conn=null, cbs={};
+  const CHARS='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  const code4 = ()=> Array.from({length:4},()=>CHARS[Math.floor(Math.random()*CHARS.length)]).join('');
 
-  let deck = [], discard = [], playerHand = [], aiHand = [];
-  let currentColor = null, turn = 'player', locked = false, hasDrawnThisTurn = false;
-  let gameOver = false;
-  let pending = 0, pendingType = null; // 누적 벌칙 (+2/+4 반격 스택)
-  let session = 0; // 메뉴로 나갔다 오면 이전 게임의 예약된 턴을 무효화
+  function cleanup(){
+    try{ conn && conn.close(); }catch(e){}
+    try{ peer && peer.destroy(); }catch(e){}
+    peer=null; conn=null; cbs={};
+  }
+  function wire(){
+    conn.on('open', ()=> cbs.open && cbs.open());
+    conn.on('data', d=> cbs.data && cbs.data(d));
+    conn.on('close', ()=> cbs.close && cbs.close());
+    conn.on('error', e=> cbs.error && cbs.error(e));
+  }
+  function host(game, callbacks){
+    cleanup(); cbs=callbacks;
+    const code = code4();
+    peer = new Peer('ragim-'+game+'-'+code);
+    peer.on('open', ()=> cbs.code && cbs.code(code));
+    peer.on('connection', c=>{
+      if(conn){ try{c.close();}catch(e){} return; } // 1:1만 허용
+      conn = c; wire();
+    });
+    peer.on('error', e=> cbs.error && cbs.error(e));
+  }
+  function join(game, code, callbacks){
+    cleanup(); cbs=callbacks;
+    peer = new Peer();
+    peer.on('open', ()=>{
+      conn = peer.connect('ragim-'+game+'-'+code.toUpperCase(), {reliable:true});
+      wire();
+    });
+    peer.on('error', e=> cbs.error && cbs.error(e));
+  }
+  function send(o){ if(conn && conn.open) conn.send(o); }
+  return {host, join, send, cleanup, get connected(){ return !!(conn && conn.open); }};
+})();
 
-  function buildDeck(){
-    const d = [];
-    for(const c of COLORS){
-      d.push({color:c, value:'0'});
-      for(let i=1;i<=9;i++){ d.push({color:c, value:String(i)}); d.push({color:c, value:String(i)}); }
-      for(const v of ['skip','reverse','draw2']){ d.push({color:c, value:v}); d.push({color:c, value:v}); }
+/* ============================================================
+   메뉴 & 모드 선택 & 온라인 방 만들기/참가
+============================================================ */
+let currentGame = null;   // 'uno' | 'quo'
+const GAME_NAME = {uno:'UNO', quo:'쿼리도'};
+
+document.querySelectorAll('.game-card').forEach(card=>{
+  card.addEventListener('click', ()=>{
+    currentGame = card.dataset.game;
+    $('mode-title').textContent = GAME_NAME[currentGame]+' — 모드 선택';
+    $('mode-overlay').classList.add('show');
+  });
+});
+$('mode-cancel').addEventListener('click', ()=> $('mode-overlay').classList.remove('show'));
+
+document.querySelectorAll('#mode-overlay [data-pick]').forEach(b=>{
+  b.addEventListener('click', ()=>{
+    const pick = b.dataset.pick;
+    $('mode-overlay').classList.remove('show');
+    if(pick==='online'){
+      if(typeof Peer === 'undefined'){
+        showAlert('온라인 불가', '온라인 모듈(PeerJS)을 불러오지 못했어요.<br>인터넷 연결을 확인해 주세요.');
+        return;
+      }
+      olShow('choose');
+      $('online-overlay').classList.add('show');
+    } else {
+      launch(currentGame, pick); // 'ai' | 'local'
     }
-    for(let i=0;i<4;i++){ d.push({color:'wild', value:'wild'}); d.push({color:'wild', value:'wild4'}); }
+  });
+});
+
+function olShow(section){
+  $('ol-choose').style.display = section==='choose' ? 'block':'none';
+  $('ol-host').style.display   = section==='host'   ? 'block':'none';
+  $('ol-join').style.display   = section==='join'   ? 'block':'none';
+}
+$('ol-cancel').addEventListener('click', ()=>{ Net.cleanup(); $('online-overlay').classList.remove('show'); });
+
+$('ol-create').addEventListener('click', ()=>{
+  olShow('host');
+  $('room-code').textContent = '----';
+  $('ol-host-status').textContent = '방 만드는 중...';
+  Net.host(currentGame, {
+    code: c=>{ $('room-code').textContent = c; $('ol-host-status').textContent = '친구 접속 대기 중...'; },
+    open: ()=>{ $('online-overlay').classList.remove('show'); launch(currentGame, 'host'); },
+    data: d=> routeNet(d),
+    close: ()=> onPeerClosed(),
+    error: e=>{ $('ol-host-status').textContent = '오류: 잠시 후 다시 시도해 주세요'; }
+  });
+});
+$('ol-join-open').addEventListener('click', ()=>{ olShow('join'); $('join-input').value=''; $('ol-join-status').textContent=''; setTimeout(()=>$('join-input').focus(),50); });
+$('ol-join-btn').addEventListener('click', ()=>{
+  const code = $('join-input').value.trim().toUpperCase();
+  if(code.length!==4){ $('ol-join-status').textContent='코드 4글자를 입력해 주세요'; return; }
+  $('ol-join-status').textContent='접속 중...';
+  Net.join(currentGame, code, {
+    open: ()=>{ $('online-overlay').classList.remove('show'); launch(currentGame, 'guest'); },
+    data: d=> routeNet(d),
+    close: ()=> onPeerClosed(),
+    error: e=>{ $('ol-join-status').textContent='접속 실패 — 코드를 확인하거나 다시 시도해 주세요'; }
+  });
+});
+$('join-input').addEventListener('keydown', e=>{ if(e.key==='Enter') $('ol-join-btn').click(); });
+
+function routeNet(d){
+  if(!d || typeof d!=='object') return;
+  if(d.g==='uno') Uno.onNet(d);
+  else if(d.g==='quo') Quo.onNet(d);
+}
+function onPeerClosed(){
+  const inGame = $('uno-screen').classList.contains('active') || $('quoridor-screen').classList.contains('active');
+  Net.cleanup();
+  if(inGame) showAlert('연결 끊김', '상대와의 연결이 끊어졌어요.');
+}
+
+function launch(game, mode){
+  if(game==='uno'){ showScreen('uno-screen'); Uno.start(mode); }
+  else { showScreen('quoridor-screen'); Quo.start(mode); }
+}
+document.querySelectorAll('[data-menu]').forEach(b=>{
+  b.addEventListener('click', ()=>{
+    Uno.stop(); Quo.stop(); Net.cleanup();
+    showScreen('menu-screen');
+  });
+});
+
+/* ============================================================
+   UNO — 모드: 'ai' | 'local' | 'host' | 'guest'
+   호스트(또는 AI/2인 모드의 기기)가 전체 상태를 관리하고,
+   게스트는 자신의 시점(view)만 받아서 그리는 구조
+============================================================ */
+const Uno = (()=>{
+  const COLORS=['red','yellow','green','blue'];
+  const COLOR_KO={red:'빨강',yellow:'노랑',green:'초록',blue:'파랑'};
+
+  let mode='ai', names=['나','AI'];
+  let st=null;            // 전체 상태 (guest는 null)
+  let view=null;          // 현재 렌더링 중인 시점
+  let shownSeat=0;        // 하단(내 패)으로 보여줄 좌석
+  let session=0, animLock=false, aiBusy=false;
+
+  /* ---------- 덱/규칙 ---------- */
+  const shuffle = a=>{ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; };
+  function buildDeck(){
+    const d=[];
+    for(const c of COLORS){
+      d.push({color:c,value:'0'});
+      for(let i=1;i<=9;i++){ d.push({color:c,value:String(i)}); d.push({color:c,value:String(i)}); }
+      for(const v of ['skip','reverse','draw2']){ d.push({color:c,value:v}); d.push({color:c,value:v}); }
+    }
+    for(let i=0;i<4;i++){ d.push({color:'wild',value:'wild'}); d.push({color:'wild',value:'wild4'}); }
     return shuffle(d);
   }
-  function shuffle(a){
-    for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; }
-    return a;
-  }
   function drawCard(){
-    if(deck.length===0){
-      if(discard.length<=1) return null;
-      const top = discard.pop();
-      deck = shuffle(discard.map(c => ({color:c.color, value:c.value})));
-      deck.forEach(c => { if(c.value==='wild'||c.value==='wild4') c.color='wild'; });
-      discard = [top];
+    if(st.deck.length===0){
+      if(st.discard.length<=1) return null;
+      const top=st.discard.pop();
+      st.deck = shuffle(st.discard.map(c=>({color:c.color,value:c.value})));
+      st.deck.forEach(c=>{ if(c.value==='wild'||c.value==='wild4') c.color='wild'; });
+      st.discard=[top];
     }
-    return deck.pop();
+    return st.deck.pop();
+  }
+  function canPlayG(card, curColor, top, pending, pendingType){
+    if(pending>0){
+      if(pendingType==='draw2') return card.value==='draw2'||card.value==='wild4';
+      return card.value==='wild4';
+    }
+    if(card.value==='wild'||card.value==='wild4') return true;
+    return card.color===curColor || card.value===top.value;
+  }
+  const canPlaySt = card => canPlayG(card, st.currentColor, st.discard[st.discard.length-1], st.pending, st.pendingType);
+  const canPlayV  = (card,v)=> canPlayG(card, v.currentColor, v.discardTop[v.discardTop.length-1], v.pending, v.pendingType);
+
+  function initState(){
+    st = {hands:[[],[]], deck:buildDeck(), discard:[], currentColor:null,
+          turnIdx:0, pending:0, pendingType:null, hasDrawn:false, over:false, winner:null};
+    for(let i=0;i<7;i++){ st.hands[0].push(drawCard()); st.hands[1].push(drawCard()); }
+    let first=drawCard();
+    while(first.value==='wild'||first.value==='wild4'||['skip','reverse','draw2'].includes(first.value)){
+      st.deck.unshift(first); shuffle(st.deck); first=drawCard();
+    }
+    st.discard.push(first);
+    st.currentColor=first.color;
+  }
+  function viewFor(seat){
+    return {
+      hand: st.hands[seat].map(c=>({...c})),
+      oppCount: st.hands[1-seat].length,
+      discardTop: st.discard.slice(-3).map(c=>({...c})),
+      currentColor: st.currentColor,
+      deckCount: st.deck.length,
+      pending: st.pending, pendingType: st.pendingType,
+      myTurn: !st.over && st.turnIdx===seat,
+      hasDrawn: st.hasDrawn && st.turnIdx===seat,
+      over: st.over, winnerSeat: st.winner
+    };
   }
 
-  function canPlay(card){
-    if(pending > 0){
-      if(pendingType==='draw2') return card.value==='draw2' || card.value==='wild4';
-      return card.value==='wild4'; // +4에는 +4로만 반격 가능
+  /* ---------- 엔진 (권한 있는 쪽만 실행) ---------- */
+  function doPlay(seat, idx, color){
+    if(!st || st.over || st.turnIdx!==seat) return null;
+    const card = st.hands[seat][idx];
+    if(!card || !canPlaySt(card)) return null;
+    const isWild = card.value==='wild'||card.value==='wild4';
+    if(isWild){ if(!COLORS.includes(color)) return null; card.color=color; }
+    st.hands[seat].splice(idx,1);
+    st.currentColor = card.color;
+    st.discard.push(card);
+    st.hasDrawn=false;
+    const ev={t:'play', seat, card:{...card}, uno: st.hands[seat].length===1};
+    if(st.hands[seat].length===0){ st.over=true; st.winner=seat; ev.win=true; return ev; }
+    switch(card.value){
+      case 'skip': case 'reverse': ev.skip=true; break;           // 같은 사람이 한 번 더
+      case 'draw2': st.pending+=2; st.pendingType='draw2'; st.turnIdx=1-seat; ev.pending=st.pending; break;
+      case 'wild4': st.pending+=4; st.pendingType='wild4'; st.turnIdx=1-seat; ev.pending=st.pending; break;
+      default: st.turnIdx=1-seat;
     }
-    const top = discard[discard.length-1];
-    if(card.value==='wild' || card.value==='wild4') return true;
-    return card.color===currentColor || card.value===top.value;
+    return ev;
+  }
+  function doDraw(seat){
+    if(!st || st.over || st.turnIdx!==seat) return null;
+    if(st.pending>0){
+      const n=st.pending; let got=0;
+      for(let i=0;i<n;i++){ const c=drawCard(); if(c){ st.hands[seat].push(c); got++; } }
+      st.pending=0; st.pendingType=null; st.turnIdx=1-seat; st.hasDrawn=false;
+      return {t:'penalty', seat, n:got};
+    }
+    if(st.hasDrawn) return null;
+    const c=drawCard();
+    if(!c) return {t:'nodeck', seat};
+    st.hands[seat].push(c);
+    const playable = canPlaySt(c);
+    if(playable){ st.hasDrawn=true; return {t:'draw', seat, playable:true, n:1}; }
+    st.turnIdx=1-seat; st.hasDrawn=false;
+    return {t:'draw', seat, playable:false, n:1};
+  }
+  function doPass(seat){
+    if(!st || st.over || st.turnIdx!==seat || !st.hasDrawn) return null;
+    st.turnIdx=1-seat; st.hasDrawn=false;
+    return {t:'pass', seat};
   }
 
-  function valueLabel(v){
-    return {skip:'🚫', reverse:'🔄', draw2:'+2', wild:'W', wild4:'+4'}[v] || v;
-  }
+  /* ---------- 렌더링 ---------- */
+  function valueLabel(v){ return {skip:'🚫',reverse:'🔄',draw2:'+2',wild:'W',wild4:'+4'}[v]||v; }
   function cardName(card){
     if(card.value==='wild') return '색바꾸기';
     if(card.value==='wild4') return '와일드 +4';
-    const n = {skip:'스킵', reverse:'리버스', draw2:'+2'}[card.value] || card.value;
+    const n={skip:'스킵',reverse:'리버스',draw2:'+2'}[card.value]||card.value;
     return `${COLOR_KO[card.color]||''} ${n}`.trim();
   }
   function cardEl(card, faceUp=true){
-    const el = document.createElement('div');
+    const el=document.createElement('div');
     if(!faceUp){ el.className='cardback'; el.style.width='var(--card-w)'; el.style.height='var(--card-h)'; return el; }
     el.className='card';
-    const inner = document.createElement('div');
-    const isWild = card.value==='wild'||card.value==='wild4';
-    inner.className = 'card-inner ' + (isWild ? 'c-wild' : 'c-'+card.color);
+    const inner=document.createElement('div');
+    const isWild=card.value==='wild'||card.value==='wild4';
+    inner.className='card-inner '+(isWild?'c-wild':'c-'+card.color);
     if(isWild){
-      const wo = document.createElement('div'); wo.className='wild-oval';
+      const wo=document.createElement('div'); wo.className='wild-oval';
       for(let i=0;i<4;i++) wo.appendChild(document.createElement('div'));
       inner.appendChild(wo);
     } else {
-      const o = document.createElement('div'); o.className='oval'; inner.appendChild(o);
+      const o=document.createElement('div'); o.className='oval'; inner.appendChild(o);
     }
-    const big = document.createElement('div');
-    big.className = 'big';
-    if(card.value==='wild'){
-      big.classList.add('wild-label');
-      big.textContent = '색바꾸기';
-    } else {
-      big.textContent = valueLabel(card.value);
+    const big=document.createElement('div'); big.className='big';
+    if(card.value==='wild'){ big.classList.add('wild-label'); big.textContent='색바꾸기'; }
+    else{
+      big.textContent=valueLabel(card.value);
       if(card.value==='skip'||card.value==='reverse') big.classList.add('small-text');
     }
     inner.appendChild(big);
-    const label = valueLabel(card.value);
+    const label=valueLabel(card.value);
     for(const pos of ['tl','br']){
-      const c = document.createElement('div'); c.className='corner '+pos; c.textContent=label;
+      const c=document.createElement('div'); c.className='corner '+pos; c.textContent=label;
       inner.appendChild(c);
     }
     el.appendChild(inner);
@@ -533,692 +782,659 @@ $('play-quoridor').addEventListener('click', ()=>{ showScreen('quoridor-screen')
   }
 
   function render(){
-    const ah = $('ai-hand'); ah.innerHTML='';
-    aiHand.forEach(()=> { const b=document.createElement('div'); b.className='cardback'; ah.appendChild(b); });
-    $('ai-count').textContent = aiHand.length;
+    const v=view; if(!v) return;
+    const ah=$('ai-hand'); ah.innerHTML='';
+    for(let i=0;i<v.oppCount;i++){ const b=document.createElement('div'); b.className='cardback'; ah.appendChild(b); }
+    $('ai-count').textContent=v.oppCount;
 
-    const dw = $('discard-wrap'); dw.innerHTML='';
-    discard.slice(-3).forEach(c => dw.appendChild(cardEl(c)));
+    const dw=$('discard-wrap'); dw.innerHTML='';
+    v.discardTop.forEach(c=> dw.appendChild(cardEl(c)));
 
-    const ph = $('player-hand'); ph.innerHTML='';
-    playerHand.forEach((card, idx)=>{
-      const el = cardEl(card);
-      const playable = turn==='player' && !locked && canPlay(card);
-      el.classList.add(playable ? 'playable' : 'dead');
-      if(turn!=='player'||locked) el.classList.remove('dead');
-      if(playable) el.addEventListener('click', ev=> playerPlay(idx, ev.currentTarget));
+    const ph=$('player-hand'); ph.innerHTML='';
+    v.hand.forEach((card,idx)=>{
+      const el=cardEl(card);
+      const playable = v.myTurn && !animLock && canPlayV(card,v);
+      el.classList.add(playable?'playable':'dead');
+      if(!v.myTurn||animLock) el.classList.remove('dead');
+      if(playable) el.addEventListener('click', ev=> uiPlay(idx, ev.currentTarget));
       ph.appendChild(el);
     });
-    $('player-count').textContent = playerHand.length;
+    $('player-count').textContent=v.hand.length;
 
-    document.querySelector('.pile-label').innerHTML = (pending>0 && turn==='player')
-      ? `<b style="color:var(--yellow)">클릭해서 ${pending}장 받기</b>`
-      : `뽑기 (${deck.length})`;
-    $('cur-color').style.background = `var(--${currentColor})`;
-    $('player-dot').classList.toggle('active', turn==='player' && !gameOver);
-    $('ai-dot').classList.toggle('active', turn==='ai' && !gameOver);
-    $('pass-btn').classList.toggle('show', turn==='player' && hasDrawnThisTurn && !locked && !gameOver && pending===0);
+    document.querySelector('.pile-label').innerHTML = (v.pending>0 && v.myTurn)
+      ? `<b style="color:var(--yellow)">클릭해서 ${v.pending}장 받기</b>`
+      : `뽑기 (${v.deckCount})`;
+    $('cur-color').style.background=`var(--${v.currentColor})`;
+    $('bottom-name').textContent = seatEmoji(shownSeat)+names[shownSeat];
+    $('top-name').textContent = seatEmoji(1-shownSeat)+names[1-shownSeat];
+    $('bottom-dot').classList.toggle('active', v.myTurn && !v.over);
+    $('top-dot').classList.toggle('active', !v.myTurn && !v.over);
+    $('pass-btn').classList.toggle('show', v.myTurn && v.hasDrawn && !animLock && !v.over && v.pending===0);
+  }
+  function seatEmoji(seat){
+    if(mode==='ai') return seat===0?'😎 ':'🤖 ';
+    if(mode==='local') return seat===0?'🔵 ':'🔴 ';
+    return (seat===(mode==='guest'?1:0)) ? '😎 ' : '🌐 ';
   }
 
-  const sleep = ms => new Promise(r=>setTimeout(r,ms));
-
+  /* ---------- 애니메이션 ---------- */
+  function rect(el){ return el.getBoundingClientRect(); }
   function fly(node, fromRect, toRect, duration=420){
-    if(reducedMotion){ node.remove?.(); return Promise.resolve(); }
+    if(reducedMotion){ node.remove && node.remove(); return Promise.resolve(); }
     return new Promise(res=>{
       node.classList.add('fly');
-      node.style.left = fromRect.left+'px';
-      node.style.top = fromRect.top+'px';
-      node.style.width = fromRect.width+'px';
-      node.style.height = fromRect.height+'px';
-      node.style.transitionDuration = duration+'ms';
+      node.style.left=fromRect.left+'px'; node.style.top=fromRect.top+'px';
+      node.style.width=fromRect.width+'px'; node.style.height=fromRect.height+'px';
+      node.style.transitionDuration=duration+'ms';
       document.body.appendChild(node);
       requestAnimationFrame(()=>requestAnimationFrame(()=>{
-        const dx = toRect.left + (toRect.width - fromRect.width)/2 - fromRect.left;
-        const dy = toRect.top + (toRect.height - fromRect.height)/2 - fromRect.top;
-        const sc = toRect.width / fromRect.width;
-        node.style.transform = `translate(${dx}px,${dy}px) scale(${sc}) rotate(${(Math.random()*14-7).toFixed(1)}deg)`;
+        const dx=toRect.left+(toRect.width-fromRect.width)/2-fromRect.left;
+        const dy=toRect.top+(toRect.height-fromRect.height)/2-fromRect.top;
+        const sc=toRect.width/fromRect.width;
+        node.style.transform=`translate(${dx}px,${dy}px) scale(${sc}) rotate(${(Math.random()*14-7).toFixed(1)}deg)`;
       }));
       setTimeout(()=>{ node.remove(); res(); }, duration+40);
     });
   }
-  function rect(el){ return el.getBoundingClientRect(); }
-
-  async function animatePlay(card, sourceEl){
+  async function flyPlay(card, sourceEl){
     const from = sourceEl ? rect(sourceEl) : rect($('ai-hand'));
     if(sourceEl) sourceEl.style.visibility='hidden';
-    const flying = cardEl(card);
-    await fly(flying, from, rect($('discard-wrap')));
+    await fly(cardEl(card), from, rect($('discard-wrap')));
   }
-  async function animateDraw(toEl, count=1){
-    const from = rect($('draw-pile'));
-    const to = rect(toEl);
+  async function flyDraws(toMine, count){
+    const from=rect($('draw-pile'));
+    const to=rect(toMine?$('player-hand'):$('ai-hand'));
     for(let i=0;i<count;i++){
-      const back = document.createElement('div');
-      back.className='cardback';
+      const back=document.createElement('div'); back.className='cardback';
       fly(back, from, to, 380);
-      await sleep(count>1 ? 140 : 380);
+      await sleep(count>1?140:380);
     }
-    if(count>1) await sleep(300);
+    if(count>1) await sleep(280);
   }
-  function markLastDrawn(){
-    const cards = $('player-hand').children;
-    if(cards.length) cards[cards.length-1].classList.add('just-drawn');
-  }
-  function markJustPlayed(){
-    const cards = $('discard-wrap').children;
-    if(cards.length) cards[cards.length-1].classList.add('just-played');
-  }
+  function markJustPlayed(){ const c=$('discard-wrap').children; if(c.length) c[c.length-1].classList.add('just-played'); }
+  function markLastDrawn(){ const c=$('player-hand').children; if(c.length) c[c.length-1].classList.add('just-drawn'); }
 
   let msgTimer;
-  function msg(text, ms=1900){
-    const m = $('msg'); m.textContent = text; m.classList.add('show');
+  function msg(text, ms=2000){
+    const m=$('msg'); m.textContent=text; m.classList.add('show');
     clearTimeout(msgTimer);
-    msgTimer = setTimeout(()=> m.classList.remove('show'), ms);
+    msgTimer=setTimeout(()=>m.classList.remove('show'), ms);
   }
   function shoutUno(){
-    const s = $('uno-shout'); s.classList.add('show');
-    setTimeout(()=> s.classList.remove('show'), 1400);
+    const s=$('uno-shout'); s.classList.add('show');
+    setTimeout(()=>s.classList.remove('show'),1400);
   }
 
-  /* 카드 효과 (2인전 + 반격 스택 룰)
-     · 스킵/리버스: 2인전에서는 둘 다 "상대 턴 건너뛰기" → 'skip'
-     · +2: 벌칙 2장 누적. 상대는 +2나 +4로 반격 가능 → 'pending'
-     · 와일드+4: 벌칙 4장 누적. 상대는 +4로만 반격 가능 → 'pending'
-     · 색바꾸기(wild): 색만 바꿈. 아무도 카드를 뽑지 않음 → 'none' */
-  function applyEffect(card, byPlayer){
-    switch(card.value){
-      case 'skip':
-      case 'reverse':
-        msg(byPlayer ? 'AI 턴 건너뛰기! 🚫' : '내 턴을 건너뛰었어요 🚫');
-        return 'skip';
-      case 'draw2':
-        pending += 2; pendingType = 'draw2';
-        msg(byPlayer ? `+2! AI는 반격하거나 ${pending}장 뽑아야 해요` : `AI의 +2! 벌칙 ${pending}장 누적`, 2600);
-        return 'pending';
-      case 'wild4':
-        pending += 4; pendingType = 'wild4';
-        msg(byPlayer ? `+4! AI는 +4로 반격하거나 ${pending}장 뽑아야 해요` : `AI의 +4! 벌칙 ${pending}장 누적`, 2600);
-        return 'pending';
-    }
-    return 'none';
-  }
-  async function dealTo(hand, count, toAI){
-    const target = toAI ? $('ai-hand') : $('player-hand');
-    await animateDraw(target, count);
-    for(let i=0;i<count;i++){ const c=drawCard(); if(c) hand.push(c); }
-    render();
-    if(!toAI) markLastDrawn();
-  }
-
-  function checkWin(){
-    if(playerHand.length===0){ endGame(true); return true; }
-    if(aiHand.length===0){ endGame(false); return true; }
-    return false;
-  }
-  function endGame(playerWon){
-    gameOver = true; locked = true;
-    render();
-    setTimeout(()=>{
-      $('result-title').textContent = playerWon ? '🎉 승리!' : '😵 패배...';
-      $('result-title').style.color = playerWon ? 'var(--yellow)' : 'var(--red)';
-      $('result-sub').textContent = playerWon
-        ? 'AI를 이겼습니다! 한 판 더?'
-        : `AI가 먼저 카드를 다 냈어요. 남은 카드: ${playerHand.length}장`;
-      $('result-overlay').classList.add('show');
-    }, 800);
-  }
-
-  async function playerPlay(idx, sourceEl){
-    if(turn!=='player'||locked||gameOver) return;
-    const card = playerHand[idx];
-    if(!canPlay(card)) return;
-    locked = true;
-    const s = session;
-
-    if(card.value==='wild'||card.value==='wild4'){
-      const chosen = await chooseColor();
+  /* ---------- 이벤트 → 화면 반영 (모든 시점 공용) ---------- */
+  async function present(v, ev, meSeat){
+    const s=session;
+    view=v;
+    if(ev && (ev.t==='draw'||ev.t==='penalty') && ev.n>0){
+      await flyDraws(ev.seat===meSeat, ev.n);
       if(s!==session) return;
-      card.color = chosen;
-      currentColor = chosen;
-    } else {
-      currentColor = card.color;
     }
-
-    playerHand.splice(idx,1);
-    await animatePlay(card, sourceEl);
-    if(s!==session) return;
-    discard.push(card);
-
-    if(card.value==='wild') msg(`색바꾸기 → ${COLOR_KO[currentColor]}!`);
-    if(playerHand.length===1) shoutUno();
     render();
-    markJustPlayed();
-    if(checkWin()) return;
-
-    const effect = applyEffect(card, true);
-    render();
-    if(effect==='skip'){
-      await sleep(900);
-      if(s!==session) return;
-      startPlayerTurn();
-      msg('한 번 더 내 차례!');
-    } else {
-      await sleep(effect==='pending' ? 1000 : 500);
-      if(s!==session) return;
-      aiTurn();
+    if(!ev){ return; }
+    const nm = seat=> names[seat];
+    switch(ev.t){
+      case 'play':
+        markJustPlayed();
+        if(ev.uno) shoutUno();
+        {
+          let text = `${nm(ev.seat)}: ${cardName(ev.card)}`;
+          if(ev.card.value==='wild') text += ` → ${COLOR_KO[ev.card.color]}`;
+          if(ev.card.value==='wild4') text = `${nm(ev.seat)}: 와일드 +4 → ${COLOR_KO[ev.card.color]} (벌칙 ${ev.pending}장)`;
+          else if(ev.card.value==='draw2') text = `${nm(ev.seat)}: +2 (벌칙 ${ev.pending}장 누적)`;
+          else if(ev.skip) text = `${nm(ev.seat)}: ${cardName(ev.card)} — 한 번 더!`;
+          msg(text, 2400);
+        }
+        break;
+      case 'draw':
+        if(ev.seat===meSeat){
+          markLastDrawn();
+          msg(ev.playable ? '뽑은 카드를 낼 수 있어요! 내거나 패스하세요' : '낼 수 있는 카드가 없네요... 패스!');
+        } else {
+          msg(ev.playable ? `${nm(ev.seat)}가 카드를 뽑았어요` : `${nm(ev.seat)}: 낼 카드가 없어 패스`);
+        }
+        break;
+      case 'penalty':
+        if(ev.seat===meSeat) markLastDrawn();
+        msg(`${nm(ev.seat)}가 벌칙 ${ev.n}장을 받았어요${ev.seat===meSeat?' 😢':' 🎉'}`);
+        break;
+      case 'pass': msg(`${nm(ev.seat)} 패스`); break;
+      case 'nodeck': msg('덱에 카드가 없어요!'); break;
+      case 'restart': msg('새 게임 시작!', 2200); break;
     }
-  }
-
-  function startPlayerTurn(){
-    turn='player'; locked=false; hasDrawnThisTurn=false;
-    render();
-    if(pending>0){
-      msg(`벌칙 ${pending}장! 반격 카드를 내거나, 뽑기 더미를 눌러 받으세요`, 3200);
-    }
-  }
-
-  $('draw-pile').addEventListener('click', async ()=>{
-    if(turn!=='player'||locked||gameOver||hasDrawnThisTurn) return;
-    locked = true;
-    const s = session;
-    if(pending>0){
-      const n = pending; pending=0; pendingType=null;
-      msg(`벌칙 ${n}장을 받았어요... 😢`);
-      await dealTo(playerHand, n, false);
-      await sleep(800);
-      if(s!==session) return;
-      aiTurn();
+    if(v.over){
+      setTimeout(()=>{
+        if(s!==session) return;
+        let title, sub;
+        if(mode==='local'){
+          title = `${names[v.winnerSeat]} 승리! 🎉`;
+          sub = '한 판 더?';
+          $('result-title').style.color='var(--yellow)';
+        } else {
+          const iWon = v.winnerSeat===meSeat;
+          title = iWon ? '🎉 승리!' : '😵 패배...';
+          sub = iWon ? '먼저 카드를 다 냈어요! 한 판 더?' : `${names[v.winnerSeat]}가 먼저 카드를 다 냈어요.`;
+          $('result-title').style.color = iWon?'var(--yellow)':'var(--red)';
+        }
+        $('result-title').textContent=title;
+        $('result-sub').textContent=sub;
+        $('result-overlay').classList.add('show');
+      }, 800);
       return;
     }
-    const c = drawCard();
-    if(!c){ msg('덱에 카드가 없어요!'); locked=false; return; }
-    await animateDraw($('player-hand'));
-    if(s!==session) return;
-    playerHand.push(c);
-    hasDrawnThisTurn = true;
-
-    if(canPlay(c)){
-      msg('뽑은 카드를 낼 수 있어요! 내거나 패스하세요');
-      locked = false;
-      render();
-      markLastDrawn();
-    } else {
-      msg('낼 수 있는 카드가 없네요... 패스!');
-      render();
-      markLastDrawn();
-      setTimeout(()=>{ if(s===session) aiTurn(); }, 1100);
+    if(v.myTurn && v.pending>0){
+      msg(`벌칙 ${v.pending}장! 반격 카드를 내거나, 뽑기 더미를 눌러 받으세요`, 3200);
     }
-  });
+  }
 
+  /* ---------- 권한 측 공용: 이벤트 처리 후 배포 ---------- */
+  async function dispatch(ev){
+    if(!ev) return;
+    if(mode==='host') Net.send({g:'uno', view:viewFor(1), ev});
+    if(mode==='local'){
+      if(!st.over && st.turnIdx!==shownSeat){
+        // 기기 넘기기: 새 사람 패는 확인 후에 공개
+        $('pass-title').textContent = `🔄 ${names[st.turnIdx]} 차례!`;
+        $('pass-overlay').classList.add('show');
+        const s=session;
+        $('pass-continue').onclick = ()=>{
+          if(s!==session) return;
+          $('pass-overlay').classList.remove('show');
+          shownSeat = st.turnIdx;
+          present(viewFor(shownSeat), ev, shownSeat);
+        };
+      } else {
+        await present(viewFor(shownSeat), ev, shownSeat);
+      }
+      return;
+    }
+    await present(viewFor(0), ev, 0);
+    if(mode==='ai') maybeAI();
+  }
+
+  /* ---------- 내 입력 ---------- */
+  async function uiPlay(idx, el){
+    const v=view;
+    if(!v || !v.myTurn || animLock) return;
+    const card=v.hand[idx];
+    if(!card || !canPlayV(card,v)) return;
+    const s=session;
+    let color=null;
+    if(card.value==='wild'||card.value==='wild4'){
+      animLock=true;
+      color = await chooseColor();
+      animLock=false;
+      if(s!==session) return;
+    }
+    if(mode==='guest'){ Net.send({g:'uno', a:'play', idx, color}); return; }
+    const seat = (mode==='local') ? st.turnIdx : 0;
+    animLock=true;
+    await flyPlay({...card, color: color||card.color}, el);
+    animLock=false;
+    if(s!==session) return;
+    dispatch(doPlay(seat, idx, color));
+  }
+  $('draw-pile').addEventListener('click', ()=>{
+    const v=view;
+    if(!v || !v.myTurn || animLock) return;
+    if(v.pending===0 && v.hasDrawn) return;
+    if(mode==='guest'){ Net.send({g:'uno', a:'draw'}); return; }
+    const seat=(mode==='local')?st.turnIdx:0;
+    dispatch(doDraw(seat));
+  });
   $('pass-btn').addEventListener('click', ()=>{
-    if(turn!=='player'||locked||!hasDrawnThisTurn) return;
-    locked = true;
-    const s = session;
-    render();
-    setTimeout(()=>{ if(s===session) aiTurn(); }, 400);
+    const v=view;
+    if(!v || !v.myTurn || !v.hasDrawn || animLock) return;
+    if(mode==='guest'){ Net.send({g:'uno', a:'pass'}); return; }
+    const seat=(mode==='local')?st.turnIdx:0;
+    dispatch(doPass(seat));
   });
-
+  $('restart-btn').addEventListener('click', ()=>{
+    if(mode==='guest'){ Net.send({g:'uno', a:'restart'}); return; }
+    restart();
+  });
+  function restart(){
+    session++;
+    $('result-overlay').classList.remove('show');
+    initState();
+    shownSeat = (mode==='guest')?1:0;
+    if(mode==='local') shownSeat=0;
+    dispatch({t:'restart'});
+  }
   function chooseColor(){
     return new Promise(resolve=>{
-      const ov = $('color-overlay');
+      const ov=$('color-overlay');
       ov.classList.add('show');
-      const btns = ov.querySelectorAll('.color-btn');
-      const handler = e=>{
-        btns.forEach(b=>b.removeEventListener('click', handler));
+      const btns=ov.querySelectorAll('.color-btn');
+      const h=e=>{
+        btns.forEach(b=>b.removeEventListener('click',h));
         ov.classList.remove('show');
         resolve(e.currentTarget.dataset.color);
       };
-      btns.forEach(b=>b.addEventListener('click', handler));
+      btns.forEach(b=>b.addEventListener('click',h));
     });
   }
 
-  async function aiTurn(){
-    if(gameOver) return;
-    turn='ai'; locked=true;
-    const s = session;
-    render();
-    await sleep(1100);
-    if(s!==session) return;
-
-    let playable = aiHand.map((c,i)=>({c,i})).filter(x=>canPlay(x.c));
-
-    if(pending>0 && playable.length===0){
-      const n = pending; pending=0; pendingType=null;
-      msg(`AI가 벌칙 ${n}장을 받았어요! 🎉`);
-      await dealTo(aiHand, n, true);
-      await sleep(800);
+  /* ---------- AI ---------- */
+  function maybeAI(){
+    if(mode!=='ai' || !st || st.over || st.turnIdx!==1 || aiBusy) return;
+    aiBusy=true;
+    const s=session;
+    setTimeout(async ()=>{
+      if(s!==session || !st || st.over || st.turnIdx!==1){ aiBusy=false; return; }
+      await aiDecide(s);
+      aiBusy=false;
+      if(s===session) maybeAI(); // 스킵으로 연속 턴이면 다시
+    }, 1100);
+  }
+  async function aiDecide(s){
+    let idxs = st.hands[1].map((c,i)=>({c,i})).filter(x=>canPlaySt(x.c));
+    if(idxs.length===0){
+      const ev=doDraw(1); // 벌칙이면 전부 받고, 아니면 1장 뽑음
+      if(!ev) return;
+      await present(viewFor(0), ev, 0);
       if(s!==session) return;
-      startPlayerTurn();
-      return;
-    }
-
-    if(playable.length===0){
-      const drawn = drawCard();
-      if(drawn){
-        await animateDraw($('ai-hand'));
-        if(s!==session) return;
-        aiHand.push(drawn);
-        msg('AI가 카드를 뽑았어요');
-        render();
+      if(ev.t==='draw' && ev.playable){
         await sleep(800);
-        if(s!==session) return;
-        if(canPlay(drawn)) playable=[{c:drawn, i:aiHand.length-1}];
-      }
-      if(playable.length===0){
-        msg('AI 패스!');
-        await sleep(700);
-        if(s!==session) return;
-        startPlayerTurn();
-        return;
-      }
+        if(s!==session || st.over || st.turnIdx!==1) return;
+        const i=st.hands[1].length-1;
+        idxs=[{c:st.hands[1][i], i}];
+      } else return;
     }
-
-    const rank = c=>{
-      if(pending>0) return c.value==='draw2' ? 0 : 1; // 반격 시 +2 먼저, +4는 아껴둠
-      const atk = ['draw2','skip','reverse'].includes(c.value);
-      if(playerHand.length<=2) return c.value==='wild4'?0 : atk?1 : c.value==='wild'?2 : 3;
+    const rank=c=>{
+      if(st.pending>0) return c.value==='draw2'?0:1;
+      const atk=['draw2','skip','reverse'].includes(c.value);
+      if(st.hands[0].length<=2) return c.value==='wild4'?0 : atk?1 : c.value==='wild'?2 : 3;
       if(atk) return 2;
       if(c.value==='wild'||c.value==='wild4') return 4;
       return 1;
     };
-    playable.sort((a,b)=>rank(a.c)-rank(b.c));
-    const pick = playable[0];
-    const card = aiHand.splice(pick.i,1)[0];
-
-    if(card.value==='wild'||card.value==='wild4'){
-      const count = {red:0,yellow:0,green:0,blue:0};
-      aiHand.forEach(c=>{ if(count[c.color]!==undefined) count[c.color]++; });
-      const chosen = COLORS.reduce((a,b)=> count[a]>=count[b]?a:b);
-      card.color = chosen;
-      currentColor = chosen;
-    } else {
-      currentColor = card.color;
+    idxs.sort((a,b)=>rank(a.c)-rank(b.c));
+    const pick=idxs[0];
+    let color=null;
+    if(pick.c.value==='wild'||pick.c.value==='wild4'){
+      const cnt={red:0,yellow:0,green:0,blue:0};
+      st.hands[1].forEach(c=>{ if(cnt[c.color]!==undefined) cnt[c.color]++; });
+      color=COLORS.reduce((a,b)=>cnt[a]>=cnt[b]?a:b);
     }
+    const ev=doPlay(1, pick.i, color);
+    if(ev) await present(viewFor(0), ev, 0);
+  }
 
-    await animatePlay(card, null);
-    if(s!==session) return;
-    discard.push(card);
-    msg(`AI: ${cardName(card)}` + (card.value==='wild' ? ` → ${COLOR_KO[currentColor]}` : ''));
-    if(aiHand.length===1) shoutUno();
-    render();
-    markJustPlayed();
-    if(checkWin()) return;
-
-    const effect = applyEffect(card, false);
-    render();
-    if(effect==='skip'){
-      await sleep(1100);
-      if(s!==session) return;
-      aiTurn();
-    } else {
-      await sleep(effect==='pending' ? 1000 : 500);
-      if(s!==session) return;
-      startPlayerTurn();
+  /* ---------- 네트워크 수신 ---------- */
+  function onNet(d){
+    if(mode==='host'){
+      if(d.a==='play') dispatch(doPlay(1, d.idx, d.color));
+      else if(d.a==='draw') dispatch(doDraw(1));
+      else if(d.a==='pass') dispatch(doPass(1));
+      else if(d.a==='restart') restart();
+    } else if(mode==='guest'){
+      if(d.view) present(d.view, d.ev||null, 1);
+      if(d.ev && d.ev.t==='restart') $('result-overlay').classList.remove('show');
     }
   }
 
-  function newGame(){
+  /* ---------- 시작/종료 ---------- */
+  function start(m){
     session++;
-    deck = buildDeck();
-    playerHand=[]; aiHand=[]; discard=[];
-    gameOver=false; locked=false; hasDrawnThisTurn=false; pending=0; pendingType=null;
-    for(let i=0;i<7;i++){ playerHand.push(drawCard()); aiHand.push(drawCard()); }
-    let first = drawCard();
-    while(first.value==='wild'||first.value==='wild4'||['skip','reverse','draw2'].includes(first.value)){
-      deck.unshift(first);
-      shuffle(deck);
-      first = drawCard();
+    mode=m; animLock=false; aiBusy=false; view=null; st=null;
+    names = m==='ai' ? ['나','AI'] : m==='local' ? ['P1','P2'] : ['호스트','게스트'];
+    if(m==='guest'){
+      shownSeat=1;
+      render(); // 빈 화면
+      msg('호스트가 게임을 준비 중이에요...', 3000);
+      return;
     }
-    discard.push(first);
-    currentColor = first.color;
-    $('result-overlay').classList.remove('show');
-    turn='player';
-    msg('게임 시작! 당신 차례예요', 2200);
-    render();
+    shownSeat=0;
+    initState();
+    if(m==='host') Net.send({g:'uno', view:viewFor(1), ev:{t:'restart'}});
+    present(viewFor(0), {t:'restart'}, 0);
+    if(m==='local') msg('P1(🔵)부터 시작!', 2400);
   }
-
-  $('restart-btn').addEventListener('click', newGame);
-  window.unoNewGame = newGame;
+  function stop(){ session++; st=null; view=null; aiBusy=false; }
+  return {start, stop, onNet};
 })();
 
 /* ============================================================
-   쿼리도 (Quoridor)
-   · 9×9 판. 나(파랑)는 맨 아래에서 시작해 맨 윗줄 도착이 목표,
-     AI(빨강)는 맨 위에서 시작해 맨 아랫줄 도착이 목표
-   · 매 턴: 말 1칸 이동 또는 벽 1개 설치 (각자 벽 10개)
-   · 벽은 2칸 길이. 상대 길을 완전히 막는 벽은 설치 불가 (경로 보장)
-   · 상대 말과 붙어 있으면 뛰어넘기 가능, 뒤가 막혀 있으면 대각선 이동
+   쿼리도 — 모드: 'ai' | 'local' | 'host' | 'guest'
+   완전 공개 정보 게임이라 양쪽이 같은 상태를 각자 유지하고
+   행동(이동/벽)만 주고받으면 됨
 ============================================================ */
-(() => {
-  const N = 9;
+const Quo = (()=>{
+  const N=9;
   const board = $('q-board');
-  let CELL = 44, GAP = 10;
-  let hWalls, vWalls;          // Set("r,c")
-  let me, ai;                  // {r,c}  me: 아래(파랑, 목표 r=0) / ai: 위(빨강, 목표 r=8)
-  let myWalls, aiWalls;
-  let qTurn, qLock, qOver;
-  let session = 0;
-  let lastWall = null;
+  let CELL=44, GAP=10;
+  let hWalls, vWalls, pawns, walls; // pawns[seat]={r,c}, walls[seat]=남은 벽
+  let turnSeat, qOver, lastWall;
+  let mode='ai', mySeat=0, names=['나','AI'];
+  let session=0;
 
-  const key = (r,c)=> r+','+c;
-  const inB = (r,c)=> r>=0 && r<N && c>=0 && c<N;
-  const hasH = (r,c)=> hWalls.has(key(r,c));
-  const hasV = (r,c)=> vWalls.has(key(r,c));
+  // seat 0 = 파랑(아래 시작, 목표 r=0), seat 1 = 빨강(위 시작, 목표 r=8)
+  const GOAL=[0,8];
+  const key=(r,c)=>r+','+c;
+  const inB=(r,c)=>r>=0&&r<N&&c>=0&&c<N;
+  const hasH=(r,c)=>hWalls.has(key(r,c));
+  const hasV=(r,c)=>vWalls.has(key(r,c));
 
-  // 인접 두 칸 사이 이동이 벽으로 막혔는지
   function blockedMove(r1,c1,r2,c2){
-    if(r2===r1+1) return hasH(r1,c1) || hasH(r1,c1-1);
-    if(r2===r1-1) return hasH(r2,c1) || hasH(r2,c1-1);
-    if(c2===c1+1) return hasV(r1,c1) || hasV(r1-1,c1);
-    if(c2===c1-1) return hasV(r1,c2) || hasV(r1-1,c2);
+    if(r2===r1+1) return hasH(r1,c1)||hasH(r1,c1-1);
+    if(r2===r1-1) return hasH(r2,c1)||hasH(r2,c1-1);
+    if(c2===c1+1) return hasV(r1,c1)||hasV(r1-1,c1);
+    if(c2===c1-1) return hasV(r1,c2)||hasV(r1-1,c2);
     return true;
   }
-
-  // 뛰어넘기/대각선 포함한 말 이동 후보
   function pawnMoves(p, opp){
-    const res = [];
+    const res=[];
     for(const [dr,dc] of [[1,0],[-1,0],[0,1],[0,-1]]){
-      const r = p.r+dr, c = p.c+dc;
-      if(!inB(r,c) || blockedMove(p.r,p.c,r,c)) continue;
-      if(r===opp.r && c===opp.c){
-        const jr = r+dr, jc = c+dc;
-        if(inB(jr,jc) && !blockedMove(r,c,jr,jc)){
-          res.push({r:jr, c:jc});
-        } else {
+      const r=p.r+dr, c=p.c+dc;
+      if(!inB(r,c)||blockedMove(p.r,p.c,r,c)) continue;
+      if(r===opp.r&&c===opp.c){
+        const jr=r+dr, jc=c+dc;
+        if(inB(jr,jc)&&!blockedMove(r,c,jr,jc)) res.push({r:jr,c:jc});
+        else{
           const sides = dr!==0 ? [[0,1],[0,-1]] : [[1,0],[-1,0]];
           for(const [sr,sc] of sides){
-            const tr = r+sr, tc = c+sc;
-            if(inB(tr,tc) && !blockedMove(r,c,tr,tc) && !(tr===p.r && tc===p.c)) res.push({r:tr, c:tc});
+            const tr=r+sr, tc=c+sc;
+            if(inB(tr,tc)&&!blockedMove(r,c,tr,tc)&&!(tr===p.r&&tc===p.c)) res.push({r:tr,c:tc});
           }
         }
       } else res.push({r,c});
     }
     return res;
   }
-
-  // 목표 줄까지 최단거리 BFS (벽만 고려)
   function bfs(start, goalRow){
-    const dist = Array.from({length:N}, ()=>Array(N).fill(-1));
-    const prev = {};
-    const q = [[start.r, start.c]];
-    dist[start.r][start.c] = 0;
-    let goal = null;
+    const dist=Array.from({length:N},()=>Array(N).fill(-1));
+    const prev={};
+    const q=[[start.r,start.c]];
+    dist[start.r][start.c]=0;
+    let goal=null;
     while(q.length){
-      const [r,c] = q.shift();
+      const [r,c]=q.shift();
       if(r===goalRow){ goal=[r,c]; break; }
       for(const [dr,dc] of [[1,0],[-1,0],[0,1],[0,-1]]){
-        const nr=r+dr, nc=c+dc;
-        if(inB(nr,nc) && dist[nr][nc]<0 && !blockedMove(r,c,nr,nc)){
-          dist[nr][nc] = dist[r][c]+1;
-          prev[key(nr,nc)] = [r,c];
-          q.push([nr,nc]);
+        const nr=r+dr,nc=c+dc;
+        if(inB(nr,nc)&&dist[nr][nc]<0&&!blockedMove(r,c,nr,nc)){
+          dist[nr][nc]=dist[r][c]+1; prev[key(nr,nc)]=[r,c]; q.push([nr,nc]);
         }
       }
     }
-    if(!goal) return {dist: Infinity, next: null};
-    let cur = goal, p = prev[key(cur[0],cur[1])];
-    while(p && !(p[0]===start.r && p[1]===start.c)){ cur=p; p=prev[key(cur[0],cur[1])]; }
-    const next = (goal[0]===start.r && goal[1]===start.c) ? null : {r:cur[0], c:cur[1]};
-    return {dist: dist[goal[0]][goal[1]], next};
+    if(!goal) return {dist:Infinity};
+    let cur=goal, p=prev[key(cur[0],cur[1])];
+    while(p&&!(p[0]===start.r&&p[1]===start.c)){ cur=p; p=prev[key(cur[0],cur[1])]; }
+    return {dist:dist[goal[0]][goal[1]]};
+  }
+  function canWall(type,r,c){
+    if(r<0||r>7||c<0||c>7) return false;
+    const set = type==='h'?hWalls:vWalls;
+    if(type==='h'){ if(hasH(r,c)||hasH(r,c-1)||hasH(r,c+1)||hasV(r,c)) return false; }
+    else{ if(hasV(r,c)||hasV(r-1,c)||hasV(r+1,c)||hasH(r,c)) return false; }
+    set.add(key(r,c));
+    const ok = bfs(pawns[0],GOAL[0]).dist!==Infinity && bfs(pawns[1],GOAL[1]).dist!==Infinity;
+    set.delete(key(r,c));
+    return ok;
   }
 
-  // 벽 설치 가능 여부 (겹침/교차/경로 차단 검사)
-  function canWall(type, r, c){
-    if(r<0 || r>7 || c<0 || c>7) return false;
-    if(type==='h'){
-      if(hasH(r,c) || hasH(r,c-1) || hasH(r,c+1) || hasV(r,c)) return false;
-      hWalls.add(key(r,c));
-      const ok = bfs(me,0).dist!==Infinity && bfs(ai,8).dist!==Infinity;
-      hWalls.delete(key(r,c));
-      return ok;
-    } else {
-      if(hasV(r,c) || hasV(r-1,c) || hasV(r+1,c) || hasH(r,c)) return false;
-      vWalls.add(key(r,c));
-      const ok = bfs(me,0).dist!==Infinity && bfs(ai,8).dist!==Infinity;
-      vWalls.delete(key(r,c));
-      return ok;
-    }
+  /* ---------- 행동 적용 (양쪽 공용) ---------- */
+  function applyMove(seat, r, c){
+    if(qOver || turnSeat!==seat) return false;
+    const legalMoves = pawnMoves(pawns[seat], pawns[1-seat]);
+    if(!legalMoves.some(m=>m.r===r&&m.c===c)) return false;
+    pawns[seat]={r,c};
+    lastWall=null;
+    if(r===GOAL[seat]){ qOver=true; render(); endQ(seat); return true; }
+    turnSeat=1-seat;
+    render();
+    return true;
   }
-  function placeWall(type, r, c){
-    (type==='h' ? hWalls : vWalls).add(key(r,c));
-    lastWall = {type, r, c};
+  function applyWall(seat, type, r, c){
+    if(qOver || turnSeat!==seat || walls[seat]<=0) return false;
+    if(!canWall(type,r,c)) return false;
+    (type==='h'?hWalls:vWalls).add(key(r,c));
+    walls[seat]--;
+    lastWall={type,r,c};
+    turnSeat=1-seat;
+    render();
+    return true;
   }
 
-  /* ---------- 레이아웃/렌더 ---------- */
-  const px = i => i*(CELL+GAP) + GAP; // 보드 패딩 = GAP
+  const controllable = ()=> !qOver && (mode==='local' ? true : turnSeat===mySeat);
+  const controlSeat = ()=> mode==='local' ? turnSeat : mySeat;
+
+  /* ---------- 렌더 ---------- */
+  const px = i=> i*(CELL+GAP)+GAP;
   function layout(){
-    const area = $('q-board-area');
-    const avail = Math.min(area.clientWidth-8, area.clientHeight-8, 480);
-    GAP = Math.max(7, Math.round(avail*0.022));
-    CELL = Math.floor((avail - GAP*10)/9);
-    const size = CELL*9 + GAP*10;
-    board.style.width = size+'px';
-    board.style.height = size+'px';
+    const area=$('q-board-area');
+    const avail=Math.min(area.clientWidth-8, area.clientHeight-8, 480);
+    GAP=Math.max(7, Math.round(avail*0.022));
+    CELL=Math.floor((avail-GAP*10)/9);
+    const size=CELL*9+GAP*10;
+    board.style.width=size+'px'; board.style.height=size+'px';
   }
-
   let qMsgTimer;
   function qMsg(text, ms=2200){
-    const m = $('q-msg'); m.textContent = text; m.classList.add('show');
+    const m=$('q-msg'); m.textContent=text; m.classList.add('show');
     clearTimeout(qMsgTimer);
-    qMsgTimer = setTimeout(()=> m.classList.remove('show'), ms);
+    qMsgTimer=setTimeout(()=>m.classList.remove('show'), ms);
   }
 
   function render(){
-    board.innerHTML = '';
-
-    // 칸
+    board.innerHTML='';
     for(let r=0;r<N;r++) for(let c=0;c<N;c++){
-      const cell = document.createElement('div');
-      cell.className = 'q-cell' + (r===0 ? ' goal-p1' : r===8 ? ' goal-p2' : '');
-      cell.style.left = px(c)+'px'; cell.style.top = px(r)+'px';
-      cell.style.width = CELL+'px'; cell.style.height = CELL+'px';
+      const cell=document.createElement('div');
+      cell.className='q-cell'+(r===0?' goal-p1':r===8?' goal-p2':'');
+      cell.style.left=px(c)+'px'; cell.style.top=px(r)+'px';
+      cell.style.width=CELL+'px'; cell.style.height=CELL+'px';
       board.appendChild(cell);
     }
-
-    // 벽
-    const wallEl = (type,r,c)=>{
-      const w = document.createElement('div');
-      w.className = 'q-wall';
-      if(lastWall && lastWall.type===type && lastWall.r===r && lastWall.c===c) w.classList.add('just-placed');
-      if(type==='h'){
-        w.style.left = px(c)+'px'; w.style.top = (px(r)+CELL)+'px';
-        w.style.width = (CELL*2+GAP)+'px'; w.style.height = GAP+'px';
-      } else {
-        w.style.left = (px(c)+CELL)+'px'; w.style.top = px(r)+'px';
-        w.style.width = GAP+'px'; w.style.height = (CELL*2+GAP)+'px';
-      }
+    const wallEl=(type,r,c)=>{
+      const w=document.createElement('div'); w.className='q-wall';
+      if(lastWall&&lastWall.type===type&&lastWall.r===r&&lastWall.c===c) w.classList.add('just-placed');
+      if(type==='h'){ w.style.left=px(c)+'px'; w.style.top=(px(r)+CELL)+'px'; w.style.width=(CELL*2+GAP)+'px'; w.style.height=GAP+'px'; }
+      else{ w.style.left=(px(c)+CELL)+'px'; w.style.top=px(r)+'px'; w.style.width=GAP+'px'; w.style.height=(CELL*2+GAP)+'px'; }
       return w;
     };
     hWalls.forEach(k=>{ const [r,c]=k.split(',').map(Number); board.appendChild(wallEl('h',r,c)); });
     vWalls.forEach(k=>{ const [r,c]=k.split(',').map(Number); board.appendChild(wallEl('v',r,c)); });
 
-    // 벽 설치 슬롯 (내 턴 + 벽이 남았을 때만)
-    if(qTurn==='me' && !qLock && !qOver && myWalls>0){
-      // 가로 홈: 칸 (r,c) 아래
+    const canControl = controllable() && (mode!=='ai' || turnSeat===0);
+    const seat = controlSeat();
+
+    if(canControl && walls[seat]>0){
       for(let r=0;r<8;r++) for(let c=0;c<N;c++){
-        const s = document.createElement('div');
-        s.className = 'q-slot';
-        s.style.left = px(c)+'px'; s.style.top = (px(r)+CELL)+'px';
-        s.style.width = CELL+'px'; s.style.height = GAP+'px';
-        bindSlot(s, 'h', r, c);
-        board.appendChild(s);
+        const s=document.createElement('div'); s.className='q-slot';
+        s.style.left=px(c)+'px'; s.style.top=(px(r)+CELL)+'px';
+        s.style.width=CELL+'px'; s.style.height=GAP+'px';
+        bindSlot(s,'h',r,c,seat); board.appendChild(s);
       }
-      // 세로 홈: 칸 (r,c) 오른쪽
       for(let r=0;r<N;r++) for(let c=0;c<8;c++){
-        const s = document.createElement('div');
-        s.className = 'q-slot';
-        s.style.left = (px(c)+CELL)+'px'; s.style.top = px(r)+'px';
-        s.style.width = GAP+'px'; s.style.height = CELL+'px';
-        bindSlot(s, 'v', r, c);
-        board.appendChild(s);
+        const s=document.createElement('div'); s.className='q-slot';
+        s.style.left=(px(c)+CELL)+'px'; s.style.top=px(r)+'px';
+        s.style.width=GAP+'px'; s.style.height=CELL+'px';
+        bindSlot(s,'v',r,c,seat); board.appendChild(s);
       }
     }
-
-    // 이동 후보 (내 턴)
-    if(qTurn==='me' && !qLock && !qOver){
-      for(const t of pawnMoves(me, ai)){
-        const d = document.createElement('div');
-        d.className = 'q-target';
-        const sz = Math.round(CELL*0.42);
-        d.style.width = sz+'px'; d.style.height = sz+'px';
-        d.style.left = (px(t.c)+(CELL-sz)/2)+'px';
-        d.style.top = (px(t.r)+(CELL-sz)/2)+'px';
-        d.addEventListener('click', ()=> myMove(t));
+    if(canControl){
+      for(const t of pawnMoves(pawns[seat], pawns[1-seat])){
+        const d=document.createElement('div'); d.className='q-target';
+        const sz=Math.round(CELL*0.42);
+        d.style.width=sz+'px'; d.style.height=sz+'px';
+        d.style.left=(px(t.c)+(CELL-sz)/2)+'px';
+        d.style.top=(px(t.r)+(CELL-sz)/2)+'px';
+        d.addEventListener('click', ()=> uiMove(seat, t));
         board.appendChild(d);
       }
     }
-
-    // 말
-    const pawn = (p, cls)=>{
-      const el = document.createElement('div');
-      el.className = 'q-pawn '+cls;
-      const sz = Math.round(CELL*0.68);
-      el.style.width = sz+'px'; el.style.height = sz+'px';
-      el.style.left = (px(p.c)+(CELL-sz)/2)+'px';
-      el.style.top = (px(p.r)+(CELL-sz)/2)+'px';
+    const pawnEl=(p,cls)=>{
+      const el=document.createElement('div'); el.className='q-pawn '+cls;
+      const sz=Math.round(CELL*0.68);
+      el.style.width=sz+'px'; el.style.height=sz+'px';
+      el.style.left=(px(p.c)+(CELL-sz)/2)+'px';
+      el.style.top=(px(p.r)+(CELL-sz)/2)+'px';
       board.appendChild(el);
     };
-    pawn(ai, 'p2');
-    pawn(me, 'p1');
+    pawnEl(pawns[1],'p2'); pawnEl(pawns[0],'p1');
 
-    $('q-my-walls').textContent = myWalls;
-    $('q-ai-walls').textContent = aiWalls;
-    $('q-my-dot').classList.toggle('active', qTurn==='me' && !qOver);
-    $('q-ai-dot').classList.toggle('active', qTurn==='ai' && !qOver);
+    // 하단 태그 = seat0(파랑), 상단 태그 = seat1(빨강)
+    $('q-bottom-name').textContent = tagName(0);
+    $('q-top-name').textContent = tagName(1);
+    $('q-bottom-walls').textContent = walls[0];
+    $('q-top-walls').textContent = walls[1];
+    $('q-bottom-dot').classList.toggle('active', turnSeat===0 && !qOver);
+    $('q-top-dot').classList.toggle('active', turnSeat===1 && !qOver);
+  }
+  function tagName(seat){
+    if(mode==='ai') return seat===0?'😎 나':'🤖 AI';
+    if(mode==='local') return seat===0?'🔵 P1':'🔴 P2';
+    return seat===mySeat ? '😎 나' : '🌐 상대';
   }
 
-  /* ---------- 벽 슬롯 (홈 클릭 → 벽 설치, 호버 미리보기) ---------- */
-  function slotTarget(type, r, c){
+  /* ---------- 벽 슬롯 ---------- */
+  function slotTarget(type,r,c){
     if(type==='h'){
-      if(c<8 && canWall('h',r,c)) return {type,r,c,valid:true};
-      if(c>0 && canWall('h',r,c-1)) return {type,r,c:c-1,valid:true};
-      return {type, r, c:Math.min(c,7), valid:false};
+      if(c<8&&canWall('h',r,c)) return {type,r,c,valid:true};
+      if(c>0&&canWall('h',r,c-1)) return {type,r,c:c-1,valid:true};
+      return {type,r,c:Math.min(c,7),valid:false};
     } else {
-      if(r<8 && canWall('v',r,c)) return {type,r,c,valid:true};
-      if(r>0 && canWall('v',r-1,c)) return {type,r:r-1,c,valid:true};
-      return {type, r:Math.min(r,7), c, valid:false};
+      if(r<8&&canWall('v',r,c)) return {type,r,c,valid:true};
+      if(r>0&&canWall('v',r-1,c)) return {type,r:r-1,c,valid:true};
+      return {type,r:Math.min(r,7),c,valid:false};
     }
   }
-  let previewEl = null;
-  function clearPreview(){ if(previewEl){ previewEl.remove(); previewEl=null; } }
-  function bindSlot(slot, type, r, c){
+  let previewEl=null;
+  const clearPreview=()=>{ if(previewEl){ previewEl.remove(); previewEl=null; } };
+  function bindSlot(slot,type,r,c,seat){
     slot.addEventListener('mouseenter', ()=>{
       clearPreview();
-      const t = slotTarget(type, r, c);
-      const w = document.createElement('div');
-      w.className = 'q-wall ' + (t.valid ? 'preview-ok' : 'preview-bad');
-      if(t.type==='h'){
-        w.style.left = px(t.c)+'px'; w.style.top = (px(t.r)+CELL)+'px';
-        w.style.width = (CELL*2+GAP)+'px'; w.style.height = GAP+'px';
-      } else {
-        w.style.left = (px(t.c)+CELL)+'px'; w.style.top = px(t.r)+'px';
-        w.style.width = GAP+'px'; w.style.height = (CELL*2+GAP)+'px';
-      }
-      board.appendChild(w);
-      previewEl = w;
+      const t=slotTarget(type,r,c);
+      const w=document.createElement('div');
+      w.className='q-wall '+(t.valid?'preview-ok':'preview-bad');
+      if(t.type==='h'){ w.style.left=px(t.c)+'px'; w.style.top=(px(t.r)+CELL)+'px'; w.style.width=(CELL*2+GAP)+'px'; w.style.height=GAP+'px'; }
+      else{ w.style.left=(px(t.c)+CELL)+'px'; w.style.top=px(t.r)+'px'; w.style.width=GAP+'px'; w.style.height=(CELL*2+GAP)+'px'; }
+      board.appendChild(w); previewEl=w;
     });
     slot.addEventListener('mouseleave', clearPreview);
     slot.addEventListener('click', ()=>{
       clearPreview();
-      const t = slotTarget(type, r, c);
+      const t=slotTarget(type,r,c);
       if(!t.valid){ qMsg('여기에는 벽을 놓을 수 없어요 (겹침 또는 길 완전 차단)'); return; }
-      placeWall(t.type, t.r, t.c);
-      myWalls--;
-      qLock = true;
-      render();
-      afterMyTurn();
+      if(applyWall(seat, t.type, t.r, t.c)){
+        if(mode==='host'||mode==='guest') Net.send({g:'quo', a:'wall', type:t.type, r:t.r, c:t.c});
+        afterMyAction();
+      }
     });
   }
 
   /* ---------- 진행 ---------- */
-  function myMove(t){
-    if(qTurn!=='me' || qLock || qOver) return;
-    qLock = true;
-    me = {r:t.r, c:t.c};
-    render();
-    if(me.r===0){ endQ(true); return; }
-    afterMyTurn();
+  function uiMove(seat, t){
+    if(applyMove(seat, t.r, t.c)){
+      if(mode==='host'||mode==='guest') Net.send({g:'quo', a:'move', r:t.r, c:t.c});
+      afterMyAction();
+    }
   }
-  function afterMyTurn(){
-    qTurn = 'ai';
-    render();
-    const s = session;
-    setTimeout(()=>{ if(s===session) aiPlay(); }, 750);
+  function afterMyAction(){
+    if(qOver) return;
+    if(mode==='ai' && turnSeat===1){
+      const s=session;
+      setTimeout(()=>{ if(s===session && !qOver) aiPlay(); }, 750);
+    } else if(mode==='local'){
+      qMsg(`${tagName(turnSeat)} 차례!`, 1600);
+    } else if(mode==='host'||mode==='guest'){
+      qMsg('상대 차례...', 1600);
+    }
   }
 
   function aiPlay(){
     if(qOver) return;
-    const myPath = bfs(ai, 8);   // AI 경로
-    const plPath = bfs(me, 0);   // 플레이어 경로
-
-    // 벽 후보 평가: 플레이어 길이는 늘리고 내 길이는 안 늘어나는 벽
-    let bestWall = null, bestScore = 0;
-    if(aiWalls>0){
+    const myPath=bfs(pawns[1],8), plPath=bfs(pawns[0],0);
+    let bestWall=null, bestScore=0;
+    if(walls[1]>0){
       for(let r=0;r<8;r++) for(let c=0;c<8;c++){
         for(const type of ['h','v']){
           if(!canWall(type,r,c)) continue;
-          (type==='h'?hWalls:vWalls).add(key(r,c));
-          const npl = bfs(me,0).dist, nmy = bfs(ai,8).dist;
-          (type==='h'?hWalls:vWalls).delete(key(r,c));
-          const score = (npl - plPath.dist) - (nmy - myPath.dist);
-          if(score > bestScore){ bestScore = score; bestWall = {type,r,c}; }
+          const set=type==='h'?hWalls:vWalls;
+          set.add(key(r,c));
+          const npl=bfs(pawns[0],0).dist, nmy=bfs(pawns[1],8).dist;
+          set.delete(key(r,c));
+          const score=(npl-plPath.dist)-(nmy-myPath.dist);
+          if(score>bestScore){ bestScore=score; bestWall={type,r,c}; }
         }
       }
     }
-
-    // 플레이어가 앞서거나 골에 가까우면 벽으로 방해, 아니면 전진
-    const urgent = plPath.dist <= myPath.dist || plPath.dist <= 3;
-    if(bestWall && ((urgent && bestScore>=1) || bestScore>=3)){
-      placeWall(bestWall.type, bestWall.r, bestWall.c);
-      aiWalls--;
+    const urgent = plPath.dist<=myPath.dist || plPath.dist<=3;
+    if(bestWall && ((urgent&&bestScore>=1) || bestScore>=3)){
+      applyWall(1, bestWall.type, bestWall.r, bestWall.c);
       qMsg('AI가 벽을 설치했어요! 🧱');
     } else {
-      // 뛰어넘기 포함 이동 후보 중 목표까지 가장 가까워지는 칸 선택
-      const moves = pawnMoves(ai, me);
-      let best = null, bestD = Infinity;
+      const moves=pawnMoves(pawns[1], pawns[0]);
+      let best=null, bestD=Infinity;
       for(const m of moves){
-        const d = bfs({r:m.r, c:m.c}, 8).dist;
-        if(d < bestD || (d===bestD && m.r > (best?best.r:-1))){ bestD = d; best = m; }
+        const d=bfs({r:m.r,c:m.c},8).dist;
+        if(d<bestD || (d===bestD && m.r>(best?best.r:-1))){ bestD=d; best=m; }
       }
-      if(best){ ai = {r:best.r, c:best.c}; }
+      if(best) applyMove(1, best.r, best.c);
     }
-    render();
-    if(ai.r===8){ endQ(false); return; }
-    qTurn = 'me';
-    qLock = false;
-    render();
   }
 
-  function endQ(iWon){
-    qOver = true;
-    render();
+  function endQ(winnerSeat){
     setTimeout(()=>{
-      $('q-result-title').textContent = iWon ? '🎉 승리!' : '😵 패배...';
-      $('q-result-title').style.color = iWon ? 'var(--yellow)' : 'var(--red)';
-      $('q-result-sub').textContent = iWon
-        ? '먼저 반대편에 도착했어요! 한 판 더?'
-        : 'AI가 먼저 도착했어요. 벽을 더 전략적으로 써보세요!';
+      let title, sub;
+      if(mode==='local'){
+        title=`${tagName(winnerSeat)} 승리! 🎉`;
+        sub='한 판 더?';
+        $('q-result-title').style.color='var(--yellow)';
+      } else {
+        const iWon = winnerSeat===(mode==='ai'?0:mySeat);
+        title = iWon?'🎉 승리!':'😵 패배...';
+        sub = iWon?'먼저 반대편에 도착했어요!':'상대가 먼저 도착했어요. 벽을 더 전략적으로!';
+        $('q-result-title').style.color = iWon?'var(--yellow)':'var(--red)';
+      }
+      $('q-result-title').textContent=title;
+      $('q-result-sub').textContent=sub;
       $('q-result-overlay').classList.add('show');
     }, 600);
   }
 
-  function newGame(){
-    session++;
-    hWalls = new Set(); vWalls = new Set();
-    me = {r:8, c:4}; ai = {r:0, c:4};
-    myWalls = 10; aiWalls = 10;
-    qTurn = 'me'; qLock = false; qOver = false; lastWall = null;
-    $('q-result-overlay').classList.remove('show');
-    layout();
-    render();
-    qMsg('쿼리도 시작! 맨 윗줄에 먼저 도착하세요', 2600);
+  /* ---------- 네트워크 수신 ---------- */
+  function onNet(d){
+    const oppSeat = 1-mySeat;
+    if(d.a==='move') applyMove(oppSeat, d.r, d.c);
+    else if(d.a==='wall') applyWall(oppSeat, d.type, d.r, d.c);
+    else if(d.a==='restart'){ resetState(); qMsg('새 게임 시작!'); }
   }
 
-  window.addEventListener('resize', ()=>{
-    if($('quoridor-screen').classList.contains('active')){ layout(); render(); }
+  /* ---------- 시작/재시작 ---------- */
+  function resetState(){
+    session++;
+    hWalls=new Set(); vWalls=new Set();
+    pawns=[{r:8,c:4},{r:0,c:4}];
+    walls=[10,10];
+    turnSeat=0; qOver=false; lastWall=null;
+    $('q-result-overlay').classList.remove('show');
+    layout(); render();
+  }
+  function start(m){
+    mode=m;
+    mySeat = (m==='guest') ? 1 : 0;
+    resetState();
+    if(m==='ai') qMsg('쿼리도 시작! 맨 윗줄에 먼저 도착하세요', 2600);
+    else if(m==='local') qMsg('P1(🔵)부터! 각자 반대편 끝이 목표예요', 2800);
+    else if(m==='host') qMsg('당신은 🔵 파랑 — 맨 윗줄 도착이 목표! 당신부터 시작', 3000);
+    else qMsg('당신은 🔴 빨강 — 맨 아랫줄 도착이 목표! 상대부터 시작', 3000);
+    $('q-help').textContent = '초록 점 클릭 = 말 이동 · 칸 사이 홈 클릭 = 벽 설치';
+  }
+  function stop(){ session++; qOver=true; }
+
+  $('q-restart-btn').addEventListener('click', ()=>{
+    if(mode==='host'||mode==='guest'){ Net.send({g:'quo', a:'restart'}); resetState(); qMsg('새 게임 시작!'); }
+    else resetState();
   });
-  $('q-restart-btn').addEventListener('click', newGame);
-  window.quoridorNewGame = newGame;
+  window.addEventListener('resize', ()=>{
+    if($('quoridor-screen').classList.contains('active') && hWalls){ layout(); render(); }
+  });
+  return {start, stop, onNet};
 })();
 </script>
 </body>
