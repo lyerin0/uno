@@ -303,6 +303,31 @@
   .member-chip.paid{border:1.5px solid var(--green);}
   .member-chip .host-star{color:var(--yellow);}
   #pay-list{display:flex; flex-direction:column; gap:8px; margin:12px 0 18px;}
+  .adm-sec{margin:16px 0; text-align:left;}
+  .adm-sec h4{font-size:14px; margin-bottom:8px; opacity:.85;}
+  .adm-input{
+    background:rgba(0,0,0,.35); border:1.5px solid rgba(255,255,255,.3); color:#fff;
+    border-radius:10px; padding:9px 12px; font-size:15px; font-weight:700; width:150px;
+    font-family:'Noto Sans KR',sans-serif; outline:none;
+  }
+  .adm-input:focus{border-color:var(--yellow);}
+  .adm-input.wide{width:100%;}
+  .adm-row{display:flex; gap:8px; align-items:center; flex-wrap:wrap;}
+  .adm-mini-btn{
+    background:rgba(255,200,0,.18); border:1.5px solid var(--yellow); color:var(--yellow);
+    border-radius:10px; padding:8px 14px; font-size:13px; font-weight:800; cursor:pointer;
+    font-family:'Noto Sans KR',sans-serif;
+  }
+  .adm-mini-btn:hover{background:rgba(255,200,0,.32);}
+  #adm-code-out{font-family:'Baloo 2',monospace; color:var(--yellow); font-size:20px; font-weight:800;
+    letter-spacing:2px; margin-top:8px; min-height:24px; user-select:text;}
+  #money-toast{
+    position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(80px);
+    background:rgba(0,0,0,.8); border:1.5px solid var(--yellow); color:#fff;
+    border-radius:24px; padding:10px 22px; font-size:15px; font-weight:800; z-index:60;
+    transition:transform .3s; pointer-events:none;
+  }
+  #money-toast.show{transform:translateX(-50%) translateY(0);}
 
   @media (max-width:600px){
     :root{--card-w:66px; --card-h:98px;}
@@ -558,6 +583,43 @@
     <button class="ghost-btn" data-menu>메뉴로</button>
   </div>
 </div>
+
+<div class="overlay" id="admin-overlay">
+  <div class="panel" style="max-width:440px; width:440px;">
+    <h2>🛠️ 관리자 패널</h2>
+    <div class="adm-sec">
+      <h4>💰 내 지갑에 지급</h4>
+      <div class="adm-row">
+        <input class="adm-input" id="adm-amt-me" type="number" min="1" placeholder="금액">
+        <button class="adm-mini-btn" id="adm-give-me">지급</button>
+      </div>
+    </div>
+    <div class="adm-sec">
+      <h4>🎁 파티원에게 지급</h4>
+      <div class="adm-row" style="margin-bottom:8px;">
+        <input class="adm-input" id="adm-amt-party" type="number" min="1" placeholder="금액">
+      </div>
+      <div class="adm-row" id="adm-members"><span style="opacity:.6; font-size:13px;">파티 중이 아니에요</span></div>
+    </div>
+    <div class="adm-sec">
+      <h4>🎟️ 상품권 코드 (다른 사람에게 돈 보내기)</h4>
+      <div class="adm-row">
+        <input class="adm-input" id="adm-code-amt" type="number" min="1" placeholder="금액">
+        <button class="adm-mini-btn" id="adm-code-gen">코드 생성</button>
+      </div>
+      <div id="adm-code-out"></div>
+      <div class="adm-row" style="margin-top:10px;">
+        <input class="adm-input wide" id="adm-code-in" type="text" placeholder="받은 코드 입력 (예: RG-XXXX-XX)">
+      </div>
+      <div class="adm-row" style="margin-top:8px;">
+        <button class="adm-mini-btn" id="adm-code-use">코드 사용</button>
+        <span id="adm-code-status" style="font-size:13px;"></span>
+      </div>
+    </div>
+    <button class="ghost-btn" id="adm-close">닫기</button>
+  </div>
+</div>
+<div id="money-toast"></div>
 
 <div class="overlay" id="pay-overlay">
   <div class="panel">
@@ -2507,12 +2569,26 @@ const Cafe = (()=>{
     if(!silent){ showScreen('menu-screen'); }
   }
 
+  /* ---------- 지급 (관리자 패널) ---------- */
+  function grant(to, amount){
+    if(to===mySeat || solo){ Wallet.add(amount); if(window.moneyToast) moneyToast(`💸 +${Wallet.fmt(amount)}원 지급!`); return; }
+    if(isHost) Net.sendTo(to, {g:'cafe', a:'grant', amount});
+    else toHost({g:'cafe', a:'grantReq', to, amount});
+  }
+  function getParty(){
+    return {inParty: phase!=='idle' && !solo && members.length>0, names: members.slice(), mySeat};
+  }
+
   /* ---------- 수신 ---------- */
   function onNet(d, fromSeat){
     if(isHost){
       if(d.a==='vote') applyVote(fromSeat, d.game);
       else if(d.a==='iPaid'){ markPaid(fromSeat); checkAllPaid(); }
       else if(d.a==='food'){ addFood(d.seat, {e:d.e, n:d.n}); bcast({g:'cafe', a:'food', seat:d.seat, e:d.e, n:d.n}); }
+      else if(d.a==='grantReq'){
+        if(d.to===0){ Wallet.add(d.amount); if(window.moneyToast) moneyToast(`💸 +${Wallet.fmt(d.amount)}원 받았어요!`); }
+        else Net.sendTo(d.to, {g:'cafe', a:'grant', amount:d.amount});
+      }
       return;
     }
     // guest
@@ -2530,6 +2606,7 @@ const Cafe = (()=>{
       case 'startGame': onStartGameMsg(d); break;
       case 'backRoom': stopAllGames(); backToRoom(); if(d.note) cMsg(d.note); break;
       case 'food': if(d.seat!==mySeat) addFood(d.seat, {e:d.e, n:d.n}); break;
+      case 'grant': Wallet.add(d.amount); if(window.moneyToast) moneyToast(`💸 +${Wallet.fmt(d.amount)}원 받았어요!`); break;
       case 'disband':
         if(d.refund && myPaid) Wallet.add(per);
         stopAllGames(); Net.cleanup(); reset();
@@ -2552,7 +2629,128 @@ const Cafe = (()=>{
 
   Wallet.renderAll();
   return {hostParty, joinParty, startSolo, abortSetup, onNet, backToRoom, leave,
-          reward, decorateResult, isActive, memberName};
+          reward, decorateResult, isActive, memberName, grant, getParty};
+})();
+</script>
+<script>
+/* ============================================================
+   🛠️ 관리자 패널 — 키보드로 'admin' 입력 시 열림
+   · 내 지갑 지급 / 파티원 지급 / 상품권 코드 생성·사용
+   ※ 정적 사이트라 진짜 보안은 없음 — 재미용 치트 패널
+============================================================ */
+const Admin = (()=>{
+  /* ---- 토스트 ---- */
+  let toastTimer;
+  window.moneyToast = function(text){
+    const t=$('money-toast');
+    t.textContent=text;
+    t.classList.add('show');
+    Wallet.renderAll();
+    clearTimeout(toastTimer);
+    toastTimer=setTimeout(()=>t.classList.remove('show'), 2600);
+  };
+
+  /* ---- 'admin' 키 입력 감지 ---- */
+  let kbuf='';
+  document.addEventListener('keydown', e=>{
+    const t=e.target;
+    if(t && (t.tagName==='INPUT'||t.tagName==='TEXTAREA'||t.isContentEditable)) return;
+    if(e.key && e.key.length===1){
+      kbuf=(kbuf+e.key.toLowerCase()).slice(-5);
+      if(kbuf==='admin'){ kbuf=''; open(); }
+    }
+  });
+
+  function open(){
+    renderMembers();
+    $('adm-code-out').textContent='';
+    $('adm-code-status').textContent='';
+    $('admin-overlay').classList.add('show');
+  }
+  $('adm-close').addEventListener('click', ()=> $('admin-overlay').classList.remove('show'));
+
+  function readAmt(id){
+    const v=parseInt($(id).value,10);
+    if(!Number.isFinite(v)||v<1||v>100000000) return null;
+    return v;
+  }
+
+  /* ---- 내 지갑 지급 ---- */
+  $('adm-give-me').addEventListener('click', ()=>{
+    const n=readAmt('adm-amt-me');
+    if(n===null){ moneyToast('금액을 올바르게 입력하세요'); return; }
+    Wallet.add(n);
+    moneyToast(`💸 내 지갑에 +${Wallet.fmt(n)}원 지급!`);
+    $('adm-amt-me').value='';
+  });
+
+  /* ---- 파티원 지급 ---- */
+  function renderMembers(){
+    const box=$('adm-members');
+    const p=Cafe.getParty();
+    box.innerHTML='';
+    if(!p.inParty){
+      box.innerHTML='<span style="opacity:.6; font-size:13px;">파티 중이 아니에요 (파티에 들어가면 멤버가 표시돼요)</span>';
+      return;
+    }
+    p.names.forEach((n,i)=>{
+      const b=document.createElement('button');
+      b.className='adm-mini-btn';
+      b.textContent=(i===p.mySeat?'😎 ':'')+n+(i===p.mySeat?' (나)':'');
+      b.addEventListener('click', ()=>{
+        const amt=readAmt('adm-amt-party');
+        if(amt===null){ moneyToast('금액을 올바르게 입력하세요'); return; }
+        Cafe.grant(i, amt);
+        if(i!==p.mySeat) moneyToast(`💸 ${n}님에게 ${Wallet.fmt(amt)}원 보냈어요!`);
+      });
+      box.appendChild(b);
+    });
+  }
+
+  /* ---- 상품권 코드 (금액을 코드에 인코딩, 브라우저당 1회 사용) ---- */
+  const XK=90514;
+  function enc(n){
+    const b=((n^XK)>>>0).toString(36).toUpperCase();
+    const ck=(n%97).toString(36).toUpperCase().padStart(2,'0');
+    return 'RG-'+b+'-'+ck;
+  }
+  function dec(s){
+    const m=/^RG-([0-9A-Z]+)-([0-9A-Z]{2})$/.exec(String(s).trim().toUpperCase());
+    if(!m) return null;
+    const n=(parseInt(m[1],36)^XK)>>>0;
+    if(!Number.isFinite(n)||n<1||n>100000000) return null;
+    if((n%97).toString(36).toUpperCase().padStart(2,'0')!==m[2]) return null;
+    return n;
+  }
+  function usedList(){
+    try{ return JSON.parse(localStorage.getItem('ragimUsedCodes')||'[]'); }catch(e){ return []; }
+  }
+  function markUsed(code){
+    try{
+      const l=usedList(); l.push(code);
+      localStorage.setItem('ragimUsedCodes', JSON.stringify(l.slice(-200)));
+    }catch(e){}
+  }
+  $('adm-code-gen').addEventListener('click', ()=>{
+    const n=readAmt('adm-code-amt');
+    if(n===null){ $('adm-code-out').textContent='금액을 입력하세요'; return; }
+    $('adm-code-out').textContent = enc(n) + `  (${Wallet.fmt(n)}원)`;
+  });
+  $('adm-code-use').addEventListener('click', ()=>{
+    const raw=$('adm-code-in').value.trim().toUpperCase().split(' ')[0];
+    const st=$('adm-code-status');
+    const n=dec(raw);
+    if(n===null){ st.textContent='❌ 잘못된 코드예요'; st.style.color='var(--red)'; return; }
+    if(usedList().includes(raw)){ st.textContent='❌ 이미 사용한 코드예요'; st.style.color='var(--red)'; return; }
+    markUsed(raw);
+    Wallet.add(n);
+    st.textContent=`✅ +${Wallet.fmt(n)}원 지급 완료!`;
+    st.style.color='var(--green)';
+    $('adm-code-in').value='';
+    moneyToast(`🎟️ 상품권 +${Wallet.fmt(n)}원!`);
+  });
+
+  return {open};
 })();
 </script>
 </body>
