@@ -255,6 +255,78 @@
   .bs-msg.show{opacity:1;}
   .bs-help{font-size:12px; opacity:.55; text-align:center; line-height:1.6;}
 
+  /* ===== 카페 카운터 배경 ===== */
+  #menu-screen{position:relative;}
+  #menu-bg{position:absolute; inset:0; overflow:hidden; pointer-events:none;}
+  #menu-screen > :not(#menu-bg){position:relative; z-index:1;}
+  .shelf{position:absolute; left:6%; right:6%; height:12px; background:linear-gradient(#8a6134,#6d4a24); border-radius:4px; box-shadow:0 4px 8px rgba(0,0,0,.4);}
+  .shelf.s1{top:12%;} .shelf.s2{top:26%;}
+  .gbox{position:absolute; bottom:12px; width:34px; height:46px; border-radius:4px; box-shadow:0 2px 4px rgba(0,0,0,.4); opacity:.9;}
+  .gbox.tall{height:58px;} .gbox.flat{width:52px; height:20px;}
+  .lamp{position:absolute; top:0; width:2px; background:rgba(0,0,0,.5);}
+  .lamp::after{
+    content:''; position:absolute; bottom:-26px; left:50%; transform:translateX(-50%);
+    width:26px; height:26px; border-radius:50%;
+    background:radial-gradient(circle at 50% 35%, #ffe9a8, var(--yellow) 60%);
+    box-shadow:0 0 34px 12px rgba(255,200,0,.28);
+  }
+  #counter{
+    position:absolute; left:0; right:0; bottom:0; height:15%;
+    background:linear-gradient(#a97b45 0%, #8a6134 12%, #5d3f1f 13%, #4a3218 100%);
+    box-shadow:0 -6px 20px rgba(0,0,0,.45);
+  }
+  .counter-item{position:absolute; bottom:12.5%; font-size:30px; filter:drop-shadow(0 3px 3px rgba(0,0,0,.5));}
+  #menu-title{position:relative;}
+
+  /* ===== 은행 카드 ===== */
+  .bank-card{
+    width:300px; height:186px; border-radius:18px; position:relative;
+    box-shadow:0 12px 30px rgba(0,0,0,.5); overflow:hidden; color:#fff;
+    font-family:'Baloo 2','Noto Sans KR',sans-serif;
+  }
+  .bank-card .bc-brand{position:absolute; top:14px; left:18px; font-weight:800; font-style:italic; font-size:16px; letter-spacing:1px; opacity:.95; text-shadow:0 2px 3px rgba(0,0,0,.35);}
+  .bank-card .bc-chip{position:absolute; top:44px; left:18px; width:42px; height:32px; border-radius:6px; background:linear-gradient(135deg,#ffd97a,#c8961e); box-shadow:inset 0 0 4px rgba(0,0,0,.4);}
+  .bank-card .bc-num{position:absolute; bottom:44px; left:18px; font-size:16px; letter-spacing:3px; font-weight:700; text-shadow:0 2px 3px rgba(0,0,0,.4);}
+  .bank-card .bc-name{position:absolute; bottom:14px; left:18px; font-size:14px; font-weight:700; opacity:.95; max-width:200px; overflow:hidden; white-space:nowrap; text-overflow:ellipsis;}
+  .bank-card .bc-sticker{position:absolute; top:12px; right:14px; font-size:52px; filter:drop-shadow(0 3px 4px rgba(0,0,0,.4));}
+  .bank-card .bc-logo{position:absolute; bottom:12px; right:16px; display:flex;}
+  .bank-card .bc-logo i{width:24px; height:24px; border-radius:50%; display:block;}
+  .bank-card .bc-logo i:first-child{background:rgba(255,255,255,.85); margin-right:-10px;}
+  .bank-card .bc-logo i:last-child{background:rgba(255,200,0,.85);}
+  .bc-swatch{width:44px; height:30px; border-radius:8px; cursor:pointer; border:2px solid rgba(255,255,255,.3); transition:transform .12s;}
+  .bc-swatch:hover{transform:scale(1.1);}
+  .bc-swatch.sel{border-color:var(--yellow); box-shadow:0 0 8px var(--yellow);}
+  .pf-emoji{width:44px; height:44px; border-radius:12px; font-size:24px; display:flex; align-items:center; justify-content:center; cursor:pointer; background:rgba(255,255,255,.07); border:2px solid transparent; transition:transform .12s;}
+  .pf-emoji:hover{transform:scale(1.12);}
+  .pf-emoji.sel{border-color:var(--yellow); background:rgba(255,200,0,.15);}
+
+  /* ===== 카드 결제 애니메이션 ===== */
+  #pay-scene{display:flex; flex-direction:column; align-items:center; gap:0; position:relative;}
+  #pay-terminal{
+    width:230px; height:170px; border-radius:20px; position:relative; z-index:2;
+    background:linear-gradient(#3d4a52,#242c31); box-shadow:0 16px 40px rgba(0,0,0,.6);
+    display:flex; align-items:center; justify-content:center; margin-top:150px;
+  }
+  #pay-slot{position:absolute; top:-7px; left:50%; transform:translateX(-50%); width:190px; height:12px; border-radius:6px; background:#0c0f11; box-shadow:inset 0 3px 5px rgba(0,0,0,.9);}
+  #pay-term-screen{
+    width:150px; height:74px; border-radius:12px; background:#0f2018;
+    display:flex; align-items:center; justify-content:center;
+    font-size:26px; font-weight:800; color:var(--green); font-family:'Baloo 2',monospace;
+    box-shadow:inset 0 0 12px rgba(0,0,0,.8);
+  }
+  #pay-anim-card{position:absolute; top:0; left:50%; z-index:1; transform:translateX(-50%) scale(.82);}
+  @keyframes card-dip{
+    0%{transform:translateX(-50%) translateY(-40px) scale(.82) rotate(-4deg);}
+    30%{transform:translateX(-50%) translateY(52px) scale(.82) rotate(0);}
+    45%{transform:translateX(-50%) translateY(96px) scale(.82);}
+    60%{transform:translateX(-50%) translateY(96px) scale(.82);}
+    100%{transform:translateX(-50%) translateY(6px) scale(.82);}
+  }
+  #pay-anim-card.dip{animation:card-dip 1.9s ease-in-out forwards;}
+  #pay-anim-status{margin-top:18px; font-size:16px; font-weight:800; color:#fff; text-align:center;}
+  @keyframes ok-pop{0%{transform:scale(.4); opacity:0;}70%{transform:scale(1.2);}100%{transform:scale(1); opacity:1;}}
+  #pay-term-screen.ok{color:var(--yellow); animation:ok-pop .35s ease-out;}
+
   /* ===== 보드게임카페 ===== */
   #wallet-badge{
     background:rgba(0,0,0,.35); border:1.5px solid var(--yellow); border-radius:24px;
@@ -350,11 +422,38 @@
 
 <!-- ================= 메뉴 ================= -->
 <div class="screen active" id="menu-screen">
+  <div id="menu-bg">
+    <div class="shelf s1">
+      <div class="gbox" style="left:4%; background:var(--red);"></div>
+      <div class="gbox tall" style="left:10%; background:var(--blue);"></div>
+      <div class="gbox" style="left:17%; background:var(--green);"></div>
+      <div class="gbox flat" style="left:23%; background:#8e6ad1;"></div>
+      <div class="gbox tall" style="right:6%; background:var(--yellow);"></div>
+      <div class="gbox" style="right:13%; background:#e07a2f;"></div>
+      <div class="gbox flat" style="right:19%; background:var(--blue);"></div>
+    </div>
+    <div class="shelf s2">
+      <div class="gbox flat" style="left:6%; background:var(--yellow);"></div>
+      <div class="gbox" style="left:14%; background:#d14a8e;"></div>
+      <div class="gbox tall" style="right:8%; background:var(--green);"></div>
+      <div class="gbox" style="right:15%; background:var(--red);"></div>
+    </div>
+    <div class="lamp" style="left:22%; height:7%;"></div>
+    <div class="lamp" style="left:50%; height:9%;"></div>
+    <div class="lamp" style="left:78%; height:7%;"></div>
+    <div id="counter"></div>
+    <div class="counter-item" style="left:8%;">☕</div>
+    <div class="counter-item" style="left:16%;">🎲</div>
+    <div class="counter-item" style="right:8%;">🧁</div>
+    <div class="counter-item" style="right:16%;">🃏</div>
+    <div class="counter-item" style="left:50%; transform:translateX(-50%); font-size:24px;">🔔</div>
+  </div>
   <div id="menu-title">RAGIM 보드게임카페</div>
   <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:center;">
     <div id="wallet-badge">💰 <span id="wallet-amt">50,000</span>원</div>
     <button class="ghost-btn" id="redeem-open" style="margin:0">🎟️ 상품권 등록</button>
     <button class="ghost-btn" id="lang-open" style="margin:0">🌐</button>
+    <button class="ghost-btn" id="profile-open" style="margin:0">😎 프로필</button>
   </div>
   <div style="display:flex; gap:16px; flex-wrap:wrap; justify-content:center;">
     <button class="big-menu-btn cafe" id="enter-cafe">☕ 카페 입장하기<br><span style="font-size:12px; font-weight:500; opacity:.75">파티 · 결제 · 투표 · 보상</span></button>
@@ -585,6 +684,44 @@
     <button class="primary-btn" id="go-restart-btn">다시 하기</button>
     <button class="primary-btn cafe-lobby" style="display:none">☕ 로비로</button>
     <button class="ghost-btn" data-menu>메뉴로</button>
+  </div>
+</div>
+
+<div class="overlay" id="profile-overlay">
+  <div class="panel" style="max-width:480px; width:480px; max-height:92vh; overflow-y:auto;">
+    <h2 id="pf-title">👤 프로필</h2>
+    <div class="adm-sec">
+      <h4 id="pf-h-name">닉네임 & 아바타</h4>
+      <div class="adm-row" style="margin-bottom:10px;">
+        <input class="adm-input wide" id="pf-name" type="text" maxlength="10" placeholder="닉네임">
+      </div>
+      <div class="adm-row" id="pf-avatars"></div>
+    </div>
+    <div class="adm-sec">
+      <h4 id="pf-h-stats">📊 전적</h4>
+      <div id="pf-stats" style="font-size:14px; font-weight:700;"></div>
+    </div>
+    <div class="adm-sec">
+      <h4 id="pf-h-card">💳 내 카드 꾸미기</h4>
+      <div style="display:flex; justify-content:center; margin-bottom:12px;">
+        <div class="bank-card" id="pf-card-preview"></div>
+      </div>
+      <div class="adm-row" id="pf-card-bgs" style="margin-bottom:10px;"></div>
+      <div class="adm-row" id="pf-card-stickers"></div>
+    </div>
+    <button class="primary-btn" id="pf-save">저장</button>
+    <button class="ghost-btn" id="pf-close">닫기</button>
+  </div>
+</div>
+
+<div class="overlay opaque" id="paycard-overlay">
+  <div id="pay-scene">
+    <div id="pay-anim-card"></div>
+    <div id="pay-terminal">
+      <div id="pay-slot"></div>
+      <div id="pay-term-screen">💳</div>
+    </div>
+    <div id="pay-anim-status">카드 결제 중...</div>
   </div>
 </div>
 
@@ -903,7 +1040,13 @@ const LSTATIC=[
   ['#admin-overlay .adm-sec:nth-of-type(1) h4',['💰 내 지갑에 지급','💰 Grant to my wallet','💰 自分の財布に支給']],
   ['#admin-overlay .adm-sec:nth-of-type(2) h4',['🎁 파티원에게 지급','🎁 Grant to party member','🎁 パーティーメンバーに支給']],
   ['#admin-overlay .adm-sec:nth-of-type(3) h4',["🎟️ 상품권 코드 생성 (사용은 홈의 '상품권 등록'에서 누구나 가능)","🎟️ Create gift code (anyone can redeem on Home)","🎟️ ギフトコード生成（登録はホームで誰でも可）"]],
-  ['#lang-overlay h2',['🌐 언어 설정','🌐 Language','🌐 言語設定']]
+  ['#lang-overlay h2',['🌐 언어 설정','🌐 Language','🌐 言語設定']],
+  ['#pf-title',['👤 프로필','👤 Profile','👤 プロフィール']],
+  ['#pf-h-name',['닉네임 & 아바타','Nickname & Avatar','ニックネーム＆アバター']],
+  ['#pf-h-stats',['📊 전적','📊 Record','📊 戦績']],
+  ['#pf-h-card',['💳 내 카드 꾸미기','💳 Customize my card','💳 マイカードをデコる']],
+  ['#pf-save',['저장','Save','保存']],
+  ['#pf-close',['닫기','Close','閉じる']]
 ];
 function applyStatic(){
   const idx = LANG==='ko'?0 : LANG==='en'?1 : 2;
@@ -917,6 +1060,8 @@ function applyStatic(){
   const ci=$('adm-code-in'); if(ci) ci.placeholder = LANG==='ko'?'코드 입력 (예: RG-XXXX-XX)':LANG==='ja'?'コード入力（例: RG-XXXX-XX）':'Enter code (e.g. RG-XXXX-XX)';
   document.querySelectorAll('#adm-amt-me,#adm-amt-party,#adm-code-amt').forEach(i=> i.placeholder = LANG==='ko'?'금액':LANG==='ja'?'金額':'Amount');
   const pw=$('adm-pw-in'); if(pw) pw.placeholder = LANG==='ko'?'비밀번호':LANG==='ja'?'パスワード':'Password';
+  const pn=$('pf-name'); if(pn) pn.placeholder = LANG==='ko'?'닉네임':LANG==='ja'?'ニックネーム':'Nickname';
+  const po=$('profile-open'); if(po && window.Profile) Profile.renderChip();
   const ps=document.querySelector('#player-zone .badge'); // "N장" 단위는 render에서 처리
   Wallet.renderAll();
 }
@@ -2527,7 +2672,7 @@ const Cafe = (()=>{
   /* ---------- 파티 만들기 / 참가 / 혼자 ---------- */
   function hostParty(){
     reset();
-    isHost=true; mySeat=0; members=['손님1']; phase='setup';
+    isHost=true; mySeat=0; members=[Profile.displayName()]; phase='setup';
     Net.host({
       code: c=>{ $('room-code').textContent=c; $('ol-host-status').textContent=tr('파티원 대기 중... (혼자여도 시작 가능)'); renderSetup(); },
       join: conn=>{
@@ -2547,7 +2692,10 @@ const Cafe = (()=>{
     reset();
     isHost=false; phase='setup';
     Net.join(code, {
-      open: ()=>{ $('ol-join-status').textContent=tr('접속 완료! 호스트가 결제를 시작하면 진행돼요'); },
+      open: ()=>{
+        $('ol-join-status').textContent=tr('접속 완료! 호스트가 결제를 시작하면 진행돼요');
+        toHost({g:'cafe', a:'hello', name: Profile.displayName()});
+      },
       data: (d)=> routeNet(d, 0),
       close: ()=> onHostClosed(),
       error: ()=>{ $('ol-join-status').textContent=tr('접속 실패 — 코드를 확인해 주세요'); }
@@ -2555,7 +2703,7 @@ const Cafe = (()=>{
   }
   function startSolo(){
     reset();
-    solo=true; isHost=true; mySeat=0; members=['나']; phase='pay';
+    solo=true; isHost=true; mySeat=0; members=[Profile.displayName()]; phase='pay';
     openPay();
   }
   function abortSetup(){
@@ -2616,13 +2764,20 @@ const Cafe = (()=>{
     $('pay-btn').textContent = myPaid ? tr('결제 완료 — 대기 중...')
       : (LANG==='ko' ? `💳 ${money(Wallet.fmt(per))} 결제하기` : LANG==='ja' ? `💳 ${money(Wallet.fmt(per))} 決済する` : `💳 Pay ${money(Wallet.fmt(per))}`);
   }
+  let paying=false;
   function doPay(){
-    if(myPaid || phase!=='pay') return;
-    if(!Wallet.spend(per)){ $('pay-status').textContent='잔액이 부족해요! 😢 (연습으로 돈을 모을 순 없어요... 파티 나가기)'; return; }
-    myPaid=true;
-    markPaid(mySeat);
-    if(!solo && !isHost) toHost({g:'cafe', a:'iPaid'});
-    checkAllPaid();
+    if(myPaid || paying || phase!=='pay') return;
+    if(Wallet.get()<per){ $('pay-status').textContent=tr('잔액이 부족해요! 😢 (연습으로 돈을 모을 순 없어요... 파티 나가기)'); return; }
+    paying=true;
+    playCardAnim(()=>{
+      paying=false;
+      if(myPaid || phase!=='pay') return;
+      if(!Wallet.spend(per)){ $('pay-status').textContent=tr('잔액이 부족해요! 😢'); return; }
+      myPaid=true;
+      markPaid(mySeat);
+      if(!solo && !isHost) toHost({g:'cafe', a:'iPaid'});
+      checkAllPaid();
+    });
   }
   function markPaid(seat){
     paid[seat]=true;
@@ -2811,6 +2966,7 @@ const Cafe = (()=>{
   function reward(iWon){
     lastReward = iWon ? 3000 : 500;
     Wallet.add(lastReward);
+    Profile.addResult(iWon);
   }
   function decorateResult(overlayId){
     const panel=$(overlayId).querySelector('.panel');
@@ -2904,6 +3060,14 @@ const Cafe = (()=>{
   /* ---------- 수신 ---------- */
   function onNet(d, fromSeat){
     if(isHost){
+      if(d.a==='hello'){
+        const nm=String(d.name||'').slice(0,16);
+        if(nm && members[fromSeat]){ members[fromSeat]=nm; }
+        bcast({g:'cafe', a:'roster', names:members});
+        if(phase==='setup') renderSetup();
+        else if(phase==='room') renderRoom();
+        return;
+      }
       if(d.a==='vote') applyVote(fromSeat, d.game);
       else if(d.a==='iPaid'){ markPaid(fromSeat); checkAllPaid(); }
       else if(d.a==='food'){ addFood(d.seat, {e:d.e, n:d.n}); bcast({g:'cafe', a:'food', seat:d.seat, e:d.e, n:d.n}); }
@@ -3103,6 +3267,153 @@ const Admin = (()=>{
   });
 
   return {open};
+})();
+</script>
+<script>
+/* ============================================================
+   👤 프로필 & 💳 카드 꾸미기 & 결제 애니메이션
+============================================================ */
+const Profile = (()=>{
+  const AVATARS=['😎','🐱','🐶','🦊','🐼','🐸','🦄','👾','🤖','🍀','🔥','⭐'];
+  const CARD_BGS=[
+    'linear-gradient(135deg,#1a2980,#26d0ce)',
+    'linear-gradient(135deg,#0f2027,#2c5364)',
+    'linear-gradient(135deg,#8e2de2,#4a00e0)',
+    'linear-gradient(135deg,#f12711,#f5af19)',
+    'linear-gradient(135deg,#11998e,#38ef7d)',
+    'linear-gradient(135deg,#141e30,#c9a227)',
+    'linear-gradient(135deg,#ff5e8a,#ff9966)',
+    'linear-gradient(135deg,#232526,#414345)'
+  ];
+  const STICKERS=['✨','🎲','🃏','🐯','🌙','🍒','⚡','🎮','🎵','🧊','👑','💎'];
+  const DEF={name:'', avatar:'😎', bg:0, sticker:'✨', wins:0, losses:0};
+
+  function load(){
+    try{
+      const p=JSON.parse(localStorage.getItem('ragimProfile')||'null');
+      if(p && typeof p==='object') return Object.assign({}, DEF, p);
+    }catch(e){}
+    return Object.assign({}, DEF);
+  }
+  function save(p){ try{ localStorage.setItem('ragimProfile', JSON.stringify(p)); }catch(e){} }
+  let P=load();
+  if(!P.name){ P.name='손님'+(100+Math.floor(Math.random()*900)); save(P); }
+
+  const get = ()=> P;
+  const displayName = ()=> `${P.avatar} ${P.name}`.slice(0,16);
+
+  function addResult(win){
+    if(win) P.wins++; else P.losses++;
+    save(P);
+  }
+  function renderChip(){
+    const b=$('profile-open');
+    if(b) b.textContent = `${P.avatar} ${P.name}`;
+  }
+
+  /* ---- 카드 렌더 ---- */
+  function renderCard(el, p){
+    el.style.background = CARD_BGS[p.bg] || CARD_BGS[0];
+    el.innerHTML = `
+      <div class="bc-brand">RAGIM BANK</div>
+      <div class="bc-chip"></div>
+      <div class="bc-sticker">${p.sticker}</div>
+      <div class="bc-num">•••• 0922 CAFE</div>
+      <div class="bc-name">${p.avatar} ${p.name}</div>
+      <div class="bc-logo"><i></i><i></i></div>`;
+  }
+
+  /* ---- 프로필 패널 ---- */
+  let draft=null;
+  function open(){
+    draft=Object.assign({}, P);
+    $('pf-name').value=draft.name;
+    renderPanel();
+    $('profile-overlay').classList.add('show');
+  }
+  function renderPanel(){
+    const av=$('pf-avatars'); av.innerHTML='';
+    AVATARS.forEach(a=>{
+      const d=document.createElement('div');
+      d.className='pf-emoji'+(draft.avatar===a?' sel':'');
+      d.textContent=a;
+      d.addEventListener('click', ()=>{ draft.avatar=a; renderPanel(); });
+      av.appendChild(d);
+    });
+    const total=P.wins+P.losses;
+    const rate= total? Math.round(P.wins/total*100) : 0;
+    $('pf-stats').textContent = LANG==='ko'
+      ? `🏆 ${P.wins}승 · 😵 ${P.losses}패 · 승률 ${rate}% (총 ${total}판)`
+      : LANG==='ja'
+      ? `🏆 ${P.wins}勝 · 😵 ${P.losses}敗 · 勝率 ${rate}%（計${total}戦）`
+      : `🏆 ${P.wins}W · 😵 ${P.losses}L · ${rate}% win rate (${total} games)`;
+    const bgs=$('pf-card-bgs'); bgs.innerHTML='';
+    CARD_BGS.forEach((g,i)=>{
+      const s=document.createElement('div');
+      s.className='bc-swatch'+(draft.bg===i?' sel':'');
+      s.style.background=g;
+      s.addEventListener('click', ()=>{ draft.bg=i; renderPanel(); });
+      bgs.appendChild(s);
+    });
+    const sts=$('pf-card-stickers'); sts.innerHTML='';
+    STICKERS.forEach(e=>{
+      const d=document.createElement('div');
+      d.className='pf-emoji'+(draft.sticker===e?' sel':'');
+      d.textContent=e;
+      d.addEventListener('click', ()=>{ draft.sticker=e; renderPanel(); });
+      sts.appendChild(d);
+    });
+    draft.name=($('pf-name').value.trim()||draft.name).slice(0,10);
+    renderCard($('pf-card-preview'), Object.assign({}, draft, {name: $('pf-name').value.trim()||draft.name}));
+  }
+  $('pf-name').addEventListener('input', ()=>{ renderPanel(); });
+  $('pf-save').addEventListener('click', ()=>{
+    const nm=$('pf-name').value.trim().slice(0,10);
+    if(nm) draft.name=nm;
+    P=Object.assign({}, P, {name:draft.name, avatar:draft.avatar, bg:draft.bg, sticker:draft.sticker});
+    save(P);
+    renderChip();
+    $('profile-overlay').classList.remove('show');
+    if(window.moneyToast) moneyToast(LANG==='ko'?'✅ 프로필을 저장했어요!':LANG==='ja'?'✅ プロフィールを保存！':'✅ Profile saved!');
+  });
+  $('pf-close').addEventListener('click', ()=> $('profile-overlay').classList.remove('show'));
+  $('profile-open').addEventListener('click', open);
+
+  /* ---- 결제 애니메이션 ---- */
+  window.playCardAnim = function(done){
+    const ov=$('paycard-overlay');
+    const card=$('pay-anim-card');
+    const scr=$('pay-term-screen');
+    const stt=$('pay-anim-status');
+    card.className=''; card.id='pay-anim-card';
+    const face=document.createElement('div');
+    face.className='bank-card';
+    renderCard(face, P);
+    card.innerHTML=''; card.appendChild(face);
+    scr.classList.remove('ok');
+    scr.textContent='💳';
+    stt.textContent = LANG==='ko'?'카드 결제 중...':LANG==='ja'?'カード決済中...':'Processing card...';
+    ov.classList.add('show');
+    if(reducedMotion){
+      setTimeout(()=>{ ov.classList.remove('show'); done(); }, 300);
+      return;
+    }
+    requestAnimationFrame(()=> card.classList.add('dip'));
+    setTimeout(()=>{ scr.textContent='●●●'; }, 900);
+    setTimeout(()=>{
+      scr.textContent='✅';
+      scr.classList.add('ok');
+      stt.textContent = LANG==='ko'?'결제 완료! 🎉':LANG==='ja'?'決済完了！🎉':'Payment complete! 🎉';
+    }, 1950);
+    setTimeout(()=>{
+      ov.classList.remove('show');
+      card.classList.remove('dip');
+      done();
+    }, 2750);
+  };
+
+  renderChip();
+  return {get, displayName, addResult, renderChip, open, renderCard};
 })();
 </script>
 </body>
