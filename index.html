@@ -301,6 +301,7 @@
   .pf-emoji.sel{border-color:var(--yellow); background:rgba(255,200,0,.15);}
 
   /* ===== 카드 결제 애니메이션 ===== */
+  #paycard-overlay{z-index:45;}  /* 결제창(#pay-overlay, z-index 20)보다 위에서 애니메이션 표시 */
   #pay-scene{display:flex; flex-direction:column; align-items:center; gap:0; position:relative;}
   #pay-terminal{
     width:230px; height:170px; border-radius:20px; position:relative; z-index:2;
