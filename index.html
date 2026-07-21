@@ -351,7 +351,10 @@
 <!-- ================= 메뉴 ================= -->
 <div class="screen active" id="menu-screen">
   <div id="menu-title">RAGIM 보드게임카페</div>
-  <div id="wallet-badge">💰 <span id="wallet-amt">50,000</span>원</div>
+  <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:center;">
+    <div id="wallet-badge">💰 <span id="wallet-amt">50,000</span>원</div>
+    <button class="ghost-btn" id="redeem-open" style="margin:0">🎟️ 상품권 등록</button>
+  </div>
   <div style="display:flex; gap:16px; flex-wrap:wrap; justify-content:center;">
     <button class="big-menu-btn cafe" id="enter-cafe">☕ 카페 입장하기<br><span style="font-size:12px; font-weight:500; opacity:.75">파티 · 결제 · 투표 · 보상</span></button>
     <button class="big-menu-btn" id="free-practice">🎮 무료 연습<br><span style="font-size:12px; font-weight:500; opacity:.75">AI · 같은 기기 2인 (보상 없음)</span></button>
@@ -584,6 +587,32 @@
   </div>
 </div>
 
+<div class="overlay" id="adm-pw-overlay">
+  <div class="panel">
+    <h2>🔒 관리자 인증</h2>
+    <div class="result-sub">비밀번호를 입력하세요</div>
+    <input class="adm-input" id="adm-pw-in" type="password" inputmode="numeric" placeholder="비밀번호" style="text-align:center; letter-spacing:6px;">
+    <div style="margin-top:14px;">
+      <button class="primary-btn" id="adm-pw-btn">확인</button>
+      <button class="ghost-btn" id="adm-pw-cancel">취소</button>
+    </div>
+    <div class="ol-status" id="adm-pw-status"></div>
+  </div>
+</div>
+
+<div class="overlay" id="redeem-overlay">
+  <div class="panel">
+    <h2>🎟️ 상품권 등록</h2>
+    <div class="result-sub">받은 코드를 입력하면 금액이 지갑에 들어와요</div>
+    <input class="adm-input wide" id="adm-code-in" type="text" placeholder="코드 입력 (예: RG-XXXX-XX)" style="text-align:center;">
+    <div style="margin-top:14px;">
+      <button class="primary-btn" id="adm-code-use">등록</button>
+      <button class="ghost-btn" id="redeem-close">닫기</button>
+    </div>
+    <div class="ol-status" id="adm-code-status" style="font-size:14px; font-weight:700;"></div>
+  </div>
+</div>
+
 <div class="overlay" id="admin-overlay">
   <div class="panel" style="max-width:440px; width:440px;">
     <h2>🛠️ 관리자 패널</h2>
@@ -602,19 +631,12 @@
       <div class="adm-row" id="adm-members"><span style="opacity:.6; font-size:13px;">파티 중이 아니에요</span></div>
     </div>
     <div class="adm-sec">
-      <h4>🎟️ 상품권 코드 (다른 사람에게 돈 보내기)</h4>
+      <h4>🎟️ 상품권 코드 생성 (사용은 홈의 '상품권 등록'에서 누구나 가능)</h4>
       <div class="adm-row">
         <input class="adm-input" id="adm-code-amt" type="number" min="1" placeholder="금액">
         <button class="adm-mini-btn" id="adm-code-gen">코드 생성</button>
       </div>
       <div id="adm-code-out"></div>
-      <div class="adm-row" style="margin-top:10px;">
-        <input class="adm-input wide" id="adm-code-in" type="text" placeholder="받은 코드 입력 (예: RG-XXXX-XX)">
-      </div>
-      <div class="adm-row" style="margin-top:8px;">
-        <button class="adm-mini-btn" id="adm-code-use">코드 사용</button>
-        <span id="adm-code-status" style="font-size:13px;"></span>
-      </div>
     </div>
     <button class="ghost-btn" id="adm-close">닫기</button>
   </div>
@@ -2657,17 +2679,47 @@ const Admin = (()=>{
     if(t && (t.tagName==='INPUT'||t.tagName==='TEXTAREA'||t.isContentEditable)) return;
     if(e.key && e.key.length===1){
       kbuf=(kbuf+e.key.toLowerCase()).slice(-5);
-      if(kbuf==='admin'){ kbuf=''; open(); }
+      if(kbuf==='admin'){ kbuf=''; askPw(); }
     }
   });
+<!-- 진짜 이거 보고 비밀번호 채가는 새끼 엄마 고아 -->
+  const ADMIN_PW='0922';
+  function askPw(){
+    $('adm-pw-in').value='';
+    $('adm-pw-status').textContent='';
+    $('adm-pw-overlay').classList.add('show');
+    setTimeout(()=>$('adm-pw-in').focus(), 50);
+  }
+  function checkPw(){
+    if($('adm-pw-in').value===ADMIN_PW){
+      $('adm-pw-overlay').classList.remove('show');
+      open();
+    } else {
+      $('adm-pw-status').textContent='❌ 비밀번호가 틀렸어요';
+      $('adm-pw-status').style.color='var(--red)';
+      $('adm-pw-in').value='';
+    }
+  }
+  $('adm-pw-btn').addEventListener('click', checkPw);
+  $('adm-pw-in').addEventListener('keydown', e=>{ if(e.key==='Enter') checkPw(); });
+  $('adm-pw-cancel').addEventListener('click', ()=> $('adm-pw-overlay').classList.remove('show'));
 
   function open(){
     renderMembers();
     $('adm-code-out').textContent='';
-    $('adm-code-status').textContent='';
     $('admin-overlay').classList.add('show');
   }
   $('adm-close').addEventListener('click', ()=> $('admin-overlay').classList.remove('show'));
+
+  /* ---- 상품권 등록 (누구나) ---- */
+  $('redeem-open').addEventListener('click', ()=>{
+    $('adm-code-in').value='';
+    $('adm-code-status').textContent='';
+    $('redeem-overlay').classList.add('show');
+    setTimeout(()=>$('adm-code-in').focus(), 50);
+  });
+  $('redeem-close').addEventListener('click', ()=> $('redeem-overlay').classList.remove('show'));
+  $('adm-code-in').addEventListener('keydown', e=>{ if(e.key==='Enter') $('adm-code-use').click(); });
 
   function readAmt(id){
     const v=parseInt($(id).value,10);
