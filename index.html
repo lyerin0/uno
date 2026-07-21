@@ -354,6 +354,7 @@
   <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:center;">
     <div id="wallet-badge">💰 <span id="wallet-amt">50,000</span>원</div>
     <button class="ghost-btn" id="redeem-open" style="margin:0">🎟️ 상품권 등록</button>
+    <button class="ghost-btn" id="lang-open" style="margin:0">🌐</button>
   </div>
   <div style="display:flex; gap:16px; flex-wrap:wrap; justify-content:center;">
     <button class="big-menu-btn cafe" id="enter-cafe">☕ 카페 입장하기<br><span style="font-size:12px; font-weight:500; opacity:.75">파티 · 결제 · 투표 · 보상</span></button>
@@ -478,11 +479,11 @@
     <div id="cafe-members" style="display:flex; gap:8px; flex-wrap:wrap;"></div>
   </div>
   <div class="cafe-sec">
-    <h3>🗳️ 게임 투표 <span id="vote-status"></span></h3>
+    <h3>🗳️ <span id="h-vote">게임 투표</span> <span id="vote-status"></span></h3>
     <div id="vote-grid"></div>
   </div>
   <div class="cafe-sec">
-    <h3>🍽️ 메뉴 주문</h3>
+    <h3 id="h-food">🍽️ 메뉴 주문</h3>
     <div id="food-bar"></div>
     <div id="table-food" title="테이블 위 음식"></div>
   </div>
@@ -587,6 +588,17 @@
   </div>
 </div>
 
+<div class="overlay" id="lang-overlay">
+  <div class="panel">
+    <h2>🌐 언어 설정</h2>
+    <div class="mode-btns">
+      <button data-lang="ko">🇰🇷 한국어</button>
+      <button data-lang="en">🇺🇸 English</button>
+      <button data-lang="ja">🇯🇵 日本語</button>
+    </div>
+  </div>
+</div>
+
 <div class="overlay" id="adm-pw-overlay">
   <div class="panel">
     <h2>🔒 관리자 인증</h2>
@@ -646,7 +658,7 @@
 <div class="overlay" id="pay-overlay">
   <div class="panel">
     <h2>💳 결제</h2>
-    <div class="result-sub"><span id="pay-n">1</span>인 파티 · 총 <b id="pay-total">4,000</b>원<br>1인당 <b id="pay-per" style="color:var(--yellow)">4,000</b>원</div>
+    <div class="result-sub" id="pay-line"></div>
     <div id="pay-list"></div>
     <button class="primary-btn" id="pay-btn">결제하기</button>
     <button class="ghost-btn" id="pay-leave">파티 나가기</button>
@@ -676,9 +688,265 @@ function showScreen(id){
   $(id).classList.add('active');
 }
 function showAlert(title, sub){
-  $('alert-title').textContent = title;
-  $('alert-sub').innerHTML = sub;
+  $('alert-title').textContent = tr(title);
+  $('alert-sub').innerHTML = tr(sub);
   $('alert-overlay').classList.add('show');
+}
+
+/* ============================================================
+   🌐 다국어 (ko / en / ja)
+   1) 국가 감지(ipapi.co) → KR=한국어, JP=일본어, 그 외=영어
+   2) 실패 시 브라우저 언어로 추정 + 설정 안내 알림
+   3) 선택은 localStorage에 저장
+============================================================ */
+let LANG='ko';
+const LDICT={
+  // ===== 정확 일치 (동적 메시지) =====
+  '게임 시작!':['Game start!','ゲームスタート！'],
+  '새 게임 시작!':['New game!','新しいゲーム開始！'],
+  '호스트가 게임을 준비 중이에요...':['Host is setting up the game...','ホストがゲームを準備中...'],
+  'P1(🔵)부터 시작!':['P1 (🔵) goes first!','P1(🔵)から開始！'],
+  '⚫ P1부터 시작!':['⚫ P1 goes first!','⚫ P1から開始！'],
+  '뽑은 카드를 낼 수 있어요! 내거나 패스하세요':['You can play the drawn card — play it or pass','引いたカードを出せます！出すかパスしてください'],
+  '낼 수 있는 카드가 없네요... 패스!':['No playable card... pass!','出せるカードがない...パス！'],
+  '덱에 카드가 없어요!':['The deck is empty!','山札がありません！'],
+  '여기에는 벽을 놓을 수 없어요 (겹침 또는 길 완전 차단)':['Cannot place a wall here (overlap or fully blocks a path)','ここには壁を置けません（重なり／完全封鎖）'],
+  '상대 차례...':["Opponent's turn...",'相手の番...'],
+  '둘 수 없는 자리예요 (자살수 또는 패)':['Illegal move (suicide or ko)','打てない場所です（自殺手またはコウ）'],
+  '쿼리도 시작! 맨 윗줄에 먼저 도착하세요':['Quoridor! Reach the top row first','コリドール！最上段に先に到着しよう'],
+  'P1(🔵)부터! 각자 반대편 끝이 목표예요':['P1 (🔵) first! Reach the opposite side','P1(🔵)から！反対側の端がゴール'],
+  '당신은 🔵 파랑 — 맨 윗줄 도착이 목표! 당신부터 시작':['You are 🔵 Blue — reach the top row! You go first','あなたは🔵青 — 最上段がゴール！あなたから'],
+  '당신은 🔴 빨강 — 맨 아랫줄 도착이 목표! 상대부터 시작':['You are 🔴 Red — reach the bottom row! Opponent first','あなたは🔴赤 — 最下段がゴール！相手から'],
+  '오목 시작! 당신이 ⚫ 흑돌(선공)이에요':['Gomoku! You are ⚫ Black (first)','五目並べ！あなたは⚫黒（先手）'],
+  '당신은 ⚫ 흑돌(선공)! 먼저 두세요':['You are ⚫ Black — you go first','あなたは⚫黒（先手）！先に打ってください'],
+  '당신은 ⚪ 백돌 — 상대(흑)부터 시작':['You are ⚪ White — Black goes first','あなたは⚪白 — 相手(黒)から'],
+  '바둑 시작! 당신이 ⚫ 흑(선공)이에요 (19×19)':['Go! You are ⚫ Black (first) — 19×19','囲碁！あなたは⚫黒（先手）19×19'],
+  '당신은 ⚫ 흑(선공)! 먼저 두세요':['You are ⚫ Black — you go first','あなたは⚫黒（先手）！先に打ってください'],
+  '당신은 ⚪ 백 — 상대(흑)부터 시작':['You are ⚪ White — Black goes first','あなたは⚪白 — 相手(黒)から'],
+  '☕ 카페에 입장했어요! 게임에 투표하세요':['☕ Welcome! Vote for a game','☕ 入店しました！ゲームに投票しよう'],
+  '잔액이 부족해요! 😢':['Not enough money! 😢','残高が足りません！😢'],
+  '잔액이 부족해요! 😢 (연습으로 돈을 모을 순 없어요... 파티 나가기)':['Not enough money! 😢 (leave the party)','残高不足です！😢（パーティーを退出してください）'],
+  '금액을 올바르게 입력하세요':['Enter a valid amount','正しい金額を入力してください'],
+  '❌ 비밀번호가 틀렸어요':['❌ Wrong password','❌ パスワードが違います'],
+  '❌ 잘못된 코드예요':['❌ Invalid code','❌ 無効なコードです'],
+  '❌ 이미 사용한 코드예요':['❌ Code already used','❌ 使用済みのコードです'],
+  '파티 종료':['Party ended','パーティー終了'],
+  '연결 끊김':['Disconnected','接続切断'],
+  '알림':['Notice','お知らせ'],
+  '온라인 불가':['Online unavailable','オンライン不可'],
+  '상대와의 연결이 끊어졌어요.':['Connection to the opponent was lost.','相手との接続が切れました。'],
+  '호스트 연결이 끊겨 파티가 종료됐어요. (이용료는 환불되지 않아요)':['Host disconnected — party ended. (No refund)','ホスト切断でパーティー終了。（返金なし）'],
+  '호스트 연결이 끊겨 파티가 취소됐어요.':['Host disconnected — party canceled.','ホスト切断でパーティー中止。'],
+  '호스트 연결이 끊겼어요.':['Host disconnected.','ホストが切断しました。'],
+  '파티원이 나가서 결제가 취소됐어요.':['A member left — payment canceled.','メンバー退出で決済がキャンセルされました。'],
+  '호스트가 결제를 취소했어요.':['Host canceled the payment.','ホストが決済をキャンセルしました。'],
+  '호스트가 파티를 종료했어요. (이용료는 환불되지 않아요)':['Host ended the party. (No refund)','ホストがパーティーを終了。（返金なし）'],
+  '파티가 종료됐어요.':['The party has ended.','パーティーが終了しました。'],
+  '온라인 모듈(PeerJS)을 불러오지 못했어요.<br>인터넷 연결을 확인해 주세요.':['Failed to load the online module (PeerJS).<br>Check your internet connection.','オンラインモジュール(PeerJS)を読み込めませんでした。<br>接続を確認してください。'],
+  '🎉 승리!':['🎉 Victory!','🎉 勝利！'],
+  '😵 패배...':['😵 Defeat...','😵 敗北...'],
+  '한 판 더?':['One more game?','もう一戦？'],
+  '먼저 카드를 다 냈어요!':['You emptied your hand first!','先にカードを出し切りました！'],
+  '먼저 반대편에 도착했어요!':['You reached the other side first!','先に反対側へ到着！'],
+  '상대가 먼저 도착했어요. 벽을 더 전략적으로!':['Opponent arrived first. Use walls smarter!','相手が先に到着。壁をもっと戦略的に！'],
+  '5개를 먼저 이었어요!':['You connected five first!','先に5つ並べました！'],
+  '상대가 먼저 5개를 이었어요.':['Opponent connected five first.','相手が先に5つ並べました。'],
+  '계가 결과':['Scoring','計算結果'],
+  '결제 완료 — 대기 중...':['Paid — waiting...','決済完了 — 待機中...'],
+  '방 만드는 중...':['Creating room...','ルーム作成中...'],
+  '파티 만드는 중...':['Creating party...','パーティー作成中...'],
+  '파티원 대기 중... (혼자여도 시작 가능)':['Waiting for members... (solo start OK)','メンバー待機中...（1人でも開始可）'],
+  '코드 4글자를 입력해 주세요':['Enter the 4-letter code','4文字のコードを入力してください'],
+  '접속 중...':['Connecting...','接続中...'],
+  '접속 실패 — 코드를 확인하거나 다시 시도해 주세요':['Failed — check the code and retry','接続失敗 — コードを確認して再試行'],
+  '접속 실패 — 코드를 확인해 주세요':['Failed — check the code','接続失敗 — コードを確認してください'],
+  '접속 완료! 호스트가 결제를 시작하면 진행돼요':['Connected! Waiting for host to start payment','接続完了！ホストが決済を開始すると進みます'],
+  '오류 — 다시 시도해 주세요':['Error — please retry','エラー — 再試行してください'],
+  '오류: 잠시 후 다시 시도해 주세요':['Error — try again shortly','エラー：しばらくして再試行'],
+  '🌐 국가를 확인하지 못해 브라우저 언어로 설정했어요. 홈의 🌐 버튼에서 언어를 바꿀 수 있어요':['🌐 Could not detect your country — set from browser language. You can change it via the 🌐 button on the home screen','🌐 国を確認できず、ブラウザ言語で設定しました。ホームの🌐ボタンで変更できます'],
+  '파티 중이 아니에요 (파티에 들어가면 멤버가 표시돼요)':['Not in a party (members appear here when you join one)','パーティー未参加（参加するとメンバーが表示されます）'],
+  '금액을 입력하세요':['Enter an amount','金額を入力してください'],
+  '✅ 결제 완료':['✅ Paid','✅ 決済済み'],
+  '⏳ 대기 중':['⏳ Waiting','⏳ 待機中']
+};
+const LRULES=[
+  [/^(.+): 와일드 \+4 → (.+) \(벌칙 (\d+)장\)$/, m=>[`${trW(m[1])}: Wild +4 → ${cardTr(m[2])} (penalty ${m[3]})`,`${trW(m[1])}: ワイルド+4 → ${cardTr(m[2])}（ペナルティ${m[3]}枚）`]],
+  [/^(.+): \+2 \(벌칙 (\d+)장 누적\)$/, m=>[`${trW(m[1])}: +2 (penalty ${m[2]} stacked)`,`${trW(m[1])}: +2（ペナルティ${m[2]}枚累積）`]],
+  [/^(.+): 리버스 — 방향 반전! 🔄$/, m=>[`${trW(m[1])}: Reverse — direction flipped! 🔄`,`${trW(m[1])}: リバース — 順番反転！🔄`]],
+  [/^(.+): 스킵! (.+) 차례 건너뜀 🚫$/, m=>[`${trW(m[1])}: Skip! ${trW(m[2])} is skipped 🚫`,`${trW(m[1])}: スキップ！${trW(m[2])}の番を飛ばす🚫`]],
+  [/^(.+): (.+) — 한 번 더!$/, m=>[`${trW(m[1])}: ${cardTr(m[2])} — one more turn!`,`${trW(m[1])}: ${cardTr(m[2])} — もう一回！`]],
+  [/^색바꾸기 → (.+)!$/, m=>[`Wild → ${cardTr(m[1])}!`,`ワイルド → ${cardTr(m[1])}！`]],
+  [/^(.+)가 카드를 뽑았어요$/, m=>[`${trW(m[1])} drew a card`,`${trW(m[1])}がカードを引きました`]],
+  [/^(.+): 낼 카드가 없어 패스$/, m=>[`${trW(m[1])}: nothing to play — pass`,`${trW(m[1])}: 出せず — パス`]],
+  [/^(.+)가 벌칙 (\d+)장을 받았어요(.*)$/, m=>[`${trW(m[1])} took ${m[2]} penalty cards${m[3]}`,`${trW(m[1])}がペナルティ${m[2]}枚を引きました${m[3]}`]],
+  [/^(.+) 패스$/, m=>[`${trW(m[1])} passed`,`${trW(m[1])} パス`]],
+  [/^(.+) 패스 — 계가합니다!$/, m=>[`${trW(m[1])} passed — scoring!`,`${trW(m[1])} パス — 計算します！`]],
+  [/^벌칙 (\d+)장! 반격 카드를 내거나, 뽑기 더미를 눌러 받으세요$/, m=>[`Penalty ${m[1]}! Counter with a card, or click the deck to take them`,`ペナルティ${m[1]}枚！反撃するか山札をクリックして受け取ろう`]],
+  [/^클릭해서 (\d+)장 받기$/, m=>[`Click to take ${m[1]}`,`クリックで${m[1]}枚受け取る`]],
+  [/^뽑기 \((\d+)\)$/, m=>[`Draw (${m[1]})`,`引く (${m[1]})`]],
+  [/^벌칙 (\d+)장을 받았어요... 😢$/, m=>[`You took ${m[1]} penalty cards... 😢`,`ペナルティ${m[1]}枚を受け取りました...😢`]],
+  [/^(.+)가 먼저 카드를 다 냈어요\.$/, m=>[`${trW(m[1])} emptied their hand first.`,`${trW(m[1])}が先に出し切りました。`]],
+  [/^(.+) 승리! 🎉$/, m=>[`${trW(m[1])} wins! 🎉`,`${trW(m[1])}の勝ち！🎉`]],
+  [/^🔄 (.+) 차례!$/, m=>[`🔄 ${trW(m[1])}'s turn!`,`🔄 ${trW(m[1])}の番！`]],
+  [/^(.+) 차례!$/, m=>[`${trW(m[1])}'s turn!`,`${trW(m[1])}の番！`]],
+  [/^(.+)가 벽을 설치했어요! 🧱$/, m=>[`${trW(m[1])} placed a wall! 🧱`,`${trW(m[1])}が壁を設置！🧱`]],
+  [/^(.+)가 (\d+)점을 잡았어요!$/, m=>[`${trW(m[1])} captured ${m[2]} stones!`,`${trW(m[1])}が${m[2]}子を取りました！`]],
+  [/^(.+)님이 (.+) 주문! (.+) 잠시 후 서빙됩니다~$/, m=>[`${trW(m[1])} ordered ${foodTr(m[2])}! ${m[3]} Coming right up~`,`${trW(m[1])}が${foodTr(m[2])}を注文！${m[3]} まもなくお届け〜`]],
+  [/^(.+)님이 나갔어요$/, m=>[`${trW(m[1])} left`,`${trW(m[1])}が退出しました`]],
+  [/^(.+)님이 파티를 나갔어요 \((\d+)인\)$/, m=>[`${trW(m[1])} left the party (${m[2]}P)`,`${trW(m[1])}がパーティー退出（${m[2]}人）`]],
+  [/^💸 \+([\d,]+)원 지급!$/, m=>[`💸 +₩${m[1]} granted!`,`💸 +${m[1]}ウォン支給！`]],
+  [/^💸 내 지갑에 \+([\d,]+)원 지급!$/, m=>[`💸 +₩${m[1]} to your wallet!`,`💸 自分の財布に+${m[1]}ウォン！`]],
+  [/^💸 \+([\d,]+)원 받았어요!$/, m=>[`💸 Received +₩${m[1]}!`,`💸 +${m[1]}ウォン受け取り！`]],
+  [/^💸 (.+)님에게 ([\d,]+)원 보냈어요!$/, m=>[`💸 Sent ₩${m[2]} to ${trW(m[1])}!`,`💸 ${trW(m[1])}に${m[2]}ウォン送金！`]],
+  [/^🎟️ 상품권 \+([\d,]+)원!$/, m=>[`🎟️ Gift +₩${m[1]}!`,`🎟️ ギフト+${m[1]}ウォン！`]],
+  [/^✅ \+([\d,]+)원 지급 완료!$/, m=>[`✅ +₩${m[1]} added!`,`✅ +${m[1]}ウォン付与完了！`]],
+  [/^⚖️ 동률! (\d+)초 후 랜덤 결정 \(투표 변경 가능\)$/, m=>[`⚖️ Tie! Random pick in ${m[1]}s (you can change your vote)`,`⚖️ 同票！${m[1]}秒後ランダム決定（投票変更可）`]],
+  [/^⏱ (\d+)초 후 시작!$/, m=>[`⏱ Starting in ${m[1]}s!`,`⏱ ${m[1]}秒後に開始！`]],
+  [/^\((\d+)\/(\d+) 투표\)$/, m=>[`(${m[1]}/${m[2]} voted)`,`(${m[1]}/${m[2]} 投票)`]],
+  [/^파티원이 나가서 결제가 취소됐어요\.(.*)$/, m=>[`A member left — payment canceled.${m[1]?' (Your payment was refunded)':''}`,`メンバー退出で決済キャンセル。${m[1]?'（返金済み）':''}`]],
+  [/^(.+) \(결제 금액은 환불됐어요\)$/, m=>[`${tr(m[1])} (Your payment was refunded)`,`${tr(m[1])}（返金されました）`]]
+];
+function trW(s){
+  if(LANG==='ko'||!s) return s;
+  return String(s)
+    .replace(/손님(\d+)/g, LANG==='ja'?'客$1':'Guest $1')
+    .replace(/상대/g, LANG==='ja'?'相手':'Rival')
+    .replace(/^나$/,'').replace(/나 \(나\)/g, LANG==='ja'?'私（自分）':'Me (you)')
+    .replace(/(^|\s)나(?=\s|$|\()/g, LANG==='ja'?'$1私':'$1Me')
+    || (LANG==='ja'?'私':'Me');
+}
+function cardTr(s){
+  if(LANG==='ko'||!s) return s;
+  const en={'빨강':'Red','노랑':'Yellow','초록':'Green','파랑':'Blue','스킵':'Skip','리버스':'Reverse','색바꾸기':'Wild','와일드 +4':'Wild +4'};
+  const ja={'빨강':'赤','노랑':'黄','초록':'緑','파랑':'青','스킵':'スキップ','리버스':'リバース','색바꾸기':'ワイルド','와일드 +4':'ワイルド+4'};
+  const map = LANG==='ja'?ja:en;
+  let out=String(s);
+  for(const k of Object.keys(map)) out=out.split(k).join(map[k]);
+  return out;
+}
+function foodTr(s){
+  if(LANG==='ko') return s;
+  const en={'라면':'Ramen','감자튀김':'Fries','콜라':'Cola','치즈볼':'Cheese balls','치킨':'Fried chicken','아이스크림':'Ice cream'};
+  const ja={'라면':'ラーメン','감자튀김':'ポテト','콜라':'コーラ','치즈볼':'チーズボール','치킨':'チキン','아이스크림':'アイス'};
+  return (LANG==='ja'?ja:en)[s]||s;
+}
+function money(nStr){ // "1,234" 형식 문자열/숫자
+  const s = typeof nStr==='number' ? nStr.toLocaleString('ko-KR') : nStr;
+  if(LANG==='en') return '₩'+s;
+  if(LANG==='ja') return s+'ウォン';
+  return s+'원';
+}
+function tr(text){
+  if(LANG==='ko' || text===undefined || text===null) return text;
+  const s=String(text);
+  const idx = LANG==='ja'?1:0;
+  if(LDICT[s]) return LDICT[s][idx];
+  for(const [re,fn] of LRULES){
+    const m=re.exec(s);
+    if(m) return fn(m)[idx];
+  }
+  // 남은 통화 표기만 변환
+  return trW(s).replace(/([\d,]+)원/g, (_,n)=>money(n));
+}
+/* ---- 정적 UI 번역 ---- */
+const LSTATIC=[
+  ['#menu-sub',['플레이할 게임을 고르세요 · AI · 2인 · 온라인','Pick a game · AI · 2P · Online','ゲームを選ぼう · AI · 2人 · オンライン']],
+  ['#enter-cafe',['☕ 카페 입장하기<br><span style="font-size:12px; font-weight:500; opacity:.75">파티 · 결제 · 투표 · 보상</span>','☕ Enter the Café<br><span style="font-size:12px; font-weight:500; opacity:.75">Party · Pay · Vote · Rewards</span>','☕ カフェに入店<br><span style="font-size:12px; font-weight:500; opacity:.75">パーティー · 決済 · 投票 · 報酬</span>']],
+  ['#free-practice',['🎮 무료 연습<br><span style="font-size:12px; font-weight:500; opacity:.75">AI · 같은 기기 2인 (보상 없음)</span>','🎮 Free Practice<br><span style="font-size:12px; font-weight:500; opacity:.75">AI · Local 2P (no rewards)</span>','🎮 無料練習<br><span style="font-size:12px; font-weight:500; opacity:.75">AI · 同じ端末2人（報酬なし）</span>']],
+  ['#redeem-open',['🎟️ 상품권 등록','🎟️ Redeem code','🎟️ ギフト登録']],
+  ['[data-game="uno"] .desc',['카드를 먼저 다 내면 승리!<br>+2/+4 반격 스택 룰','Empty your hand first to win!<br>+2/+4 counter-stack rule','先に出し切れば勝ち！<br>+2/+4 反撃スタックルール']],
+  ['[data-game="quo"] .name',['쿼리도','Quoridor','コリドール']],
+  ['[data-game="quo"] .desc',['벽으로 길을 막으며<br>반대편 끝에 먼저 도착!','Block with walls and<br>reach the far side first!','壁で道を塞ぎながら<br>反対側へ先に到着！']],
+  ['[data-game="gmk"] .name',['오목','Gomoku','五目並べ']],
+  ['[data-game="gmk"] .desc',['가로·세로·대각선으로<br>5개를 먼저 이으면 승리!','Connect five in a row<br>to win!','縦・横・斜めに<br>5つ並べたら勝ち！']],
+  ['[data-game="go"] .name',['바둑','Go','囲碁']],
+  ['[data-game="go"] .desc',['정식 19×19 바둑판에서<br>집을 더 많이 지으면 승리!','Full 19×19 board —<br>most territory wins!','本格19×19盤で<br>陣地が多い方の勝ち！']],
+  ['#mode-overlay [data-pick="ai"]',['🤖 AI 대전','🤖 vs AI','🤖 AI対戦']],
+  ['#mode-overlay [data-pick="local"]',['👥 같은 기기 2인','👥 Local 2P','👥 同じ端末で2人']],
+  ['#mode-cancel',['취소','Cancel','キャンセル']],
+  ['#online-overlay h2',['☕ 카페 입장','☕ Enter the Café','☕ カフェ入店']],
+  ['#ol-solo',['🧑 혼자 입장 (4,000원)','🧑 Solo entry (₩4,000)','🧑 1人で入店（4,000ウォン）']],
+  ['#ol-create',['🎪 파티 만들기 (최대 4명)','🎪 Create party (max 4)','🎪 パーティー作成（最大4人）']],
+  ['#ol-join-open',['🔑 코드로 파티 참가','🔑 Join with code','🔑 コードで参加']],
+  ['#ol-host .result-sub',['친구에게 이 코드를 알려주세요','Share this code with friends','このコードを友達に伝えてね']],
+  ['#ol-join .result-sub',['호스트에게 받은 코드를 입력하세요','Enter the code from the host','ホストから受け取ったコードを入力']],
+  ['#ol-join-btn',['접속','Join','接続']],
+  ['#ol-cancel',['취소','Cancel','キャンセル']],
+  ['#pass-overlay .result-sub',['기기를 넘겨주세요.<br>다른 사람은 화면을 보지 마세요 🙈','Pass the device.<br>No peeking! 🙈','端末を渡してください。<br>他の人は画面を見ないで🙈']],
+  ['#pass-continue',['준비 완료','Ready','準備OK']],
+  ['#color-overlay h2',['색을 선택하세요','Choose a color','色を選んでください']],
+  ['#restart-btn',['다시 하기','Play again','もう一度']],
+  ['#q-restart-btn',['다시 하기','Play again','もう一度']],
+  ['#gmk-restart-btn',['다시 하기','Play again','もう一度']],
+  ['#go-restart-btn',['다시 하기','Play again','もう一度']],
+  ['#go-pass',['패스','Pass','パス']],
+  ['#q-help',['초록 점 클릭 = 말 이동 · 칸 사이 홈 클릭 = 벽 설치','Green dot = move · groove between cells = place wall','緑の点=移動 · マスの間=壁設置']],
+  ['#gmk-screen .bs-help',['빈 칸을 눌러 돌을 놓으세요 · 5개를 먼저 이으면 승리 (흑이 선공)','Tap an empty point to place · connect 5 to win (Black first)','空点をタップで着手 · 5つ並べたら勝ち（黒先手）']],
+  ['#go-screen .bs-help',['정식 19×19 · 양쪽 다 패스하면 계가 (중국식, 덤 6.5집)','Full 19×19 · both pass = scoring (Chinese, komi 6.5)','本格19×19 · 双方パスで計算（中国式・コミ6.5目）']],
+  ['#h-vote',['게임 투표','Game vote','ゲーム投票']],
+  ['#h-food',['🍽️ 메뉴 주문','🍽️ Order food','🍽️ フード注文']],
+  ['#cafe-leave',['🚪 파티 나가기','🚪 Leave party','🚪 退出']],
+  ['#pay-overlay h2',['💳 결제','💳 Payment','💳 決済']],
+  ['#pay-leave',['파티 나가기','Leave party','退出']],
+  ['#admin-overlay h2',['🛠️ 관리자 패널','🛠️ Admin Panel','🛠️ 管理者パネル']],
+  ['#adm-pw-overlay h2',['🔒 관리자 인증','🔒 Admin Login','🔒 管理者認証']],
+  ['#adm-pw-overlay .result-sub',['비밀번호를 입력하세요','Enter password','パスワードを入力']],
+  ['#adm-pw-btn',['확인','OK','確認']],
+  ['#adm-pw-cancel',['취소','Cancel','キャンセル']],
+  ['#redeem-overlay h2',['🎟️ 상품권 등록','🎟️ Redeem Gift Code','🎟️ ギフトコード登録']],
+  ['#redeem-overlay .result-sub',['받은 코드를 입력하면 금액이 지갑에 들어와요','Enter a code to add money to your wallet','コードを入力すると財布にお金が入ります']],
+  ['#adm-code-use',['등록','Redeem','登録']],
+  ['#redeem-close',['닫기','Close','閉じる']],
+  ['#adm-close',['닫기','Close','閉じる']],
+  ['#adm-give-me',['지급','Grant','支給']],
+  ['#adm-code-gen',['코드 생성','Generate','コード生成']],
+  ['#admin-overlay .adm-sec:nth-of-type(1) h4',['💰 내 지갑에 지급','💰 Grant to my wallet','💰 自分の財布に支給']],
+  ['#admin-overlay .adm-sec:nth-of-type(2) h4',['🎁 파티원에게 지급','🎁 Grant to party member','🎁 パーティーメンバーに支給']],
+  ['#admin-overlay .adm-sec:nth-of-type(3) h4',["🎟️ 상품권 코드 생성 (사용은 홈의 '상품권 등록'에서 누구나 가능)","🎟️ Create gift code (anyone can redeem on Home)","🎟️ ギフトコード生成（登録はホームで誰でも可）"]],
+  ['#lang-overlay h2',['🌐 언어 설정','🌐 Language','🌐 言語設定']]
+];
+function applyStatic(){
+  const idx = LANG==='ko'?0 : LANG==='en'?1 : 2;
+  for(const [sel, arr] of LSTATIC){
+    const el=document.querySelector(sel);
+    if(el) el.innerHTML=arr[idx];
+  }
+  document.querySelectorAll('.back-btn:not(#cafe-leave)').forEach(b=> b.textContent = LANG==='ko'?'← 메뉴':LANG==='ja'?'← メニュー':'← Menu');
+  document.querySelectorAll('.cafe-lobby').forEach(b=> b.textContent = LANG==='ko'?'☕ 로비로':LANG==='ja'?'☕ ロビーへ':'☕ To lobby');
+  const ji=$('join-input'); if(ji) ji.placeholder = LANG==='ko'?'ABCD':'ABCD';
+  const ci=$('adm-code-in'); if(ci) ci.placeholder = LANG==='ko'?'코드 입력 (예: RG-XXXX-XX)':LANG==='ja'?'コード入力（例: RG-XXXX-XX）':'Enter code (e.g. RG-XXXX-XX)';
+  document.querySelectorAll('#adm-amt-me,#adm-amt-party,#adm-code-amt').forEach(i=> i.placeholder = LANG==='ko'?'금액':LANG==='ja'?'金額':'Amount');
+  const pw=$('adm-pw-in'); if(pw) pw.placeholder = LANG==='ko'?'비밀번호':LANG==='ja'?'パスワード':'Password';
+  const ps=document.querySelector('#player-zone .badge'); // "N장" 단위는 render에서 처리
+  Wallet.renderAll();
+}
+function unitCards(n){ return LANG==='ko'?n+'장':LANG==='ja'?n+'枚':String(n); }
+function setLang(l, save){
+  LANG=l;
+  document.documentElement.lang = l;
+  if(save){ try{ localStorage.setItem('ragimLang', l); }catch(e){} }
+  applyStatic();
+}
+async function detectLang(){
+  let saved=null;
+  try{ saved=localStorage.getItem('ragimLang'); }catch(e){}
+  if(saved==='ko'||saved==='en'||saved==='ja'){ setLang(saved,false); return; }
+  let cc=null;
+  try{
+    const ctrl=new AbortController();
+    const t=setTimeout(()=>ctrl.abort(), 4000);
+    const r=await fetch('https://ipapi.co/json/', {signal:ctrl.signal});
+    clearTimeout(t);
+    if(r.ok){ const j=await r.json(); cc=j && j.country_code; }
+  }catch(e){}
+  if(cc){
+    setLang(cc==='KR'?'ko' : cc==='JP'?'ja' : 'en', false);
+  } else {
+    // 국가 감지 실패 → 브라우저 언어 + 안내
+    const nl=(navigator.language||'en').toLowerCase();
+    setLang(nl.startsWith('ko')?'ko' : nl.startsWith('ja')?'ja' : 'en', false);
+    setTimeout(()=>{ if(window.moneyToast) moneyToast(tr('🌐 국가를 확인하지 못해 브라우저 언어로 설정했어요. 홈의 🌐 버튼에서 언어를 바꿀 수 있어요')); }, 800);
+  }
 }
 
 /* ============================================================
@@ -701,8 +969,8 @@ const Wallet = (()=>{
   function fmt(n){ return n.toLocaleString('ko-KR'); }
   function renderAll(){
     const c=get();
-    const a=$('wallet-amt'); if(a) a.textContent=fmt(c);
-    const b=$('cafe-wallet'); if(b) b.textContent=fmt(c);
+    const a=$('wallet-badge'); if(a) a.innerHTML='💰 '+money(fmt(c));
+    const b=$('wallet-badge2'); if(b) b.innerHTML='💰 '+money(fmt(c));
   }
   return {get, add, spend, fmt, renderAll};
 })();
@@ -825,7 +1093,7 @@ $('ol-create').addEventListener('click', ()=>{
   if(typeof Peer === 'undefined'){ showAlert('온라인 불가', '온라인 모듈(PeerJS)을 불러오지 못했어요.<br>인터넷 연결을 확인해 주세요.'); return; }
   olShow('host');
   $('room-code').textContent='----';
-  $('ol-host-status').textContent='파티 만드는 중...';
+  $('ol-host-status').textContent=tr('파티 만드는 중...');
   $('ol-roster').innerHTML='';
   $('ol-start-pay').style.display='none';
   Cafe.hostParty();
@@ -837,8 +1105,8 @@ $('ol-join-open').addEventListener('click', ()=>{
 });
 $('ol-join-btn').addEventListener('click', ()=>{
   const code = $('join-input').value.trim().toUpperCase();
-  if(code.length!==4){ $('ol-join-status').textContent='코드 4글자를 입력해 주세요'; return; }
-  $('ol-join-status').textContent='접속 중...';
+  if(code.length!==4){ $('ol-join-status').textContent=tr('코드 4글자를 입력해 주세요'); return; }
+  $('ol-join-status').textContent=tr('접속 중...');
   Cafe.joinParty(code);
 });
 $('join-input').addEventListener('keydown', e=>{ if(e.key==='Enter') $('ol-join-btn').click(); });
@@ -870,6 +1138,15 @@ document.querySelectorAll('[data-menu]').forEach(b=>{
 document.querySelectorAll('.cafe-lobby').forEach(b=>{
   b.addEventListener('click', ()=>{ stopAllGames(); Cafe.backToRoom(); });
 });
+$('lang-open').addEventListener('click', ()=> $('lang-overlay').classList.add('show'));
+document.querySelectorAll('#lang-overlay [data-lang]').forEach(b=>{
+  b.addEventListener('click', ()=>{
+    setLang(b.dataset.lang, true);
+    $('lang-overlay').classList.remove('show');
+  });
+});
+$('lang-overlay').addEventListener('click', e=>{ if(e.target.id==='lang-overlay') $('lang-overlay').classList.remove('show'); });
+detectLang();
 </script>
 <script>
 /* ============================================================
@@ -1070,9 +1347,9 @@ const Uno = (()=>{
       const dot=document.createElement('span');
       dot.className='turn-dot'+(o.active?' active':'');
       lab.appendChild(dot);
-      const nm=document.createElement('span'); nm.textContent=seatLabel(o.seat);
+      const nm=document.createElement('span'); nm.textContent=trW(seatLabel(o.seat));
       lab.appendChild(nm);
-      const badge=document.createElement('span'); badge.className='badge'; badge.textContent=o.count+'장';
+      const badge=document.createElement('span'); badge.className='badge'; badge.textContent=unitCards(o.count);
       lab.appendChild(badge);
       box.appendChild(lab);
       const hand=document.createElement('div'); hand.className='opp-hand';
@@ -1093,11 +1370,13 @@ const Uno = (()=>{
       ph.appendChild(el);
     });
     $('player-count').textContent=v.hand.length;
+    const myBadge=document.querySelector('#player-zone .badge');
+    if(myBadge) myBadge.innerHTML=`<span id="player-count">${v.hand.length}</span>${LANG==='ko'?'장':LANG==='ja'?'枚':''}`;
     document.querySelector('.pile-label').innerHTML = (v.pending>0 && v.myTurn)
-      ? `<b style="color:var(--yellow)">클릭해서 ${v.pending}장 받기</b>`
-      : `뽑기 (${v.deckCount})`;
+      ? `<b style="color:var(--yellow)">${tr(`클릭해서 ${v.pending}장 받기`)}</b>`
+      : tr(`뽑기 (${v.deckCount})`);
     $('cur-color').style.background=`var(--${v.currentColor})`;
-    $('bottom-name').textContent = seatLabel(shownSeat);
+    $('bottom-name').textContent = trW(seatLabel(shownSeat));
     $('bottom-dot').classList.toggle('active', v.myTurn && !v.over);
     $('pass-btn').classList.toggle('show', v.myTurn && v.hasDrawn && !animLock && !v.over && v.pending===0);
   }
@@ -1140,7 +1419,7 @@ const Uno = (()=>{
 
   let msgTimer;
   function msg(text, ms=2000){
-    const m=$('msg'); m.textContent=text; m.classList.add('show');
+    const m=$('msg'); m.textContent=tr(text); m.classList.add('show');
     clearTimeout(msgTimer);
     msgTimer=setTimeout(()=>m.classList.remove('show'), ms);
   }
@@ -1205,8 +1484,8 @@ const Uno = (()=>{
           $('result-title').style.color=iWon?'var(--yellow)':'var(--red)';
           if(Cafe.isActive()) Cafe.reward(iWon);
         }
-        $('result-title').textContent=title;
-        $('result-sub').textContent=sub;
+        $('result-title').textContent=tr(title);
+        $('result-sub').textContent=tr(sub);
         $('result-overlay').classList.add('show');
         Cafe.decorateResult('result-overlay');
       }, 800);
@@ -1224,7 +1503,7 @@ const Uno = (()=>{
     }
     if(mode==='local'){
       if(!st.over && st.turnIdx!==shownSeat){
-        $('pass-title').textContent=`🔄 ${seatLabel(st.turnIdx)} 차례!`;
+        $('pass-title').textContent=tr(`🔄 ${trW(seatLabel(st.turnIdx))} 차례!`);
         $('pass-overlay').classList.add('show');
         const s=session;
         $('pass-continue').onclick = ()=>{
@@ -1490,7 +1769,7 @@ const Quo = (()=>{
   }
   let qMsgTimer;
   function qMsg(text, ms=2200){
-    const m=$('q-msg'); m.textContent=text; m.classList.add('show');
+    const m=$('q-msg'); m.textContent=tr(text); m.classList.add('show');
     clearTimeout(qMsgTimer);
     qMsgTimer=setTimeout(()=>m.classList.remove('show'), ms);
   }
@@ -1550,8 +1829,8 @@ const Quo = (()=>{
       board.appendChild(el);
     };
     pawnEl(pawns[1],'p2'); pawnEl(pawns[0],'p1');
-    $('q-bottom-name').textContent = tagName(0);
-    $('q-top-name').textContent = tagName(1);
+    $('q-bottom-name').textContent = trW(tagName(0));
+    $('q-top-name').textContent = trW(tagName(1));
     $('q-bottom-walls').textContent = walls[0];
     $('q-top-walls').textContent = walls[1];
     $('q-bottom-dot').classList.toggle('active', turnSeat===0 && !qOver);
@@ -1663,8 +1942,8 @@ const Quo = (()=>{
         $('q-result-title').style.color=iWon?'var(--yellow)':'var(--red)';
         if(Cafe.isActive()) Cafe.reward(iWon);
       }
-      $('q-result-title').textContent=title;
-      $('q-result-sub').textContent=sub;
+      $('q-result-title').textContent=tr(title);
+      $('q-result-sub').textContent=tr(sub);
       $('q-result-overlay').classList.add('show');
       Cafe.decorateResult('q-result-overlay');
     }, 600);
@@ -1732,7 +2011,7 @@ const Gmk = (()=>{
   }
   let mTimer;
   function gMsg(text, ms=2200){
-    const m=$('gmk-msg'); m.textContent=text; m.classList.add('show');
+    const m=$('gmk-msg'); m.textContent=tr(text); m.classList.add('show');
     clearTimeout(mTimer);
     mTimer=setTimeout(()=>m.classList.remove('show'), ms);
   }
@@ -1764,8 +2043,8 @@ const Gmk = (()=>{
         board.appendChild(st);
       }
     }
-    $('gmk-bottom-name').textContent=tagName(0);
-    $('gmk-top-name').textContent=tagName(1);
+    $('gmk-bottom-name').textContent=trW(tagName(0));
+    $('gmk-top-name').textContent=trW(tagName(1));
     $('gmk-bottom-dot').classList.toggle('active', turnSeat===0 && !over);
     $('gmk-top-dot').classList.toggle('active', turnSeat===1 && !over);
   }
@@ -1870,8 +2149,8 @@ const Gmk = (()=>{
         $('gmk-result-title').style.color=iWon?'var(--yellow)':'var(--red)';
         if(Cafe.isActive()) Cafe.reward(iWon);
       }
-      $('gmk-result-title').textContent=title;
-      $('gmk-result-sub').textContent=sub;
+      $('gmk-result-title').textContent=tr(title);
+      $('gmk-result-sub').textContent=tr(sub);
       $('gmk-result-overlay').classList.add('show');
       Cafe.decorateResult('gmk-result-overlay');
     }, 500);
@@ -2025,7 +2304,7 @@ const Go = (()=>{
   }
   let goTimer;
   function goMsg(text, ms=2200){
-    const m=$('go-msg'); m.textContent=text; m.classList.add('show');
+    const m=$('go-msg'); m.textContent=tr(text); m.classList.add('show');
     clearTimeout(goTimer);
     goTimer=setTimeout(()=>m.classList.remove('show'), ms);
   }
@@ -2054,8 +2333,8 @@ const Go = (()=>{
         board.appendChild(st);
       }
     }
-    $('go-bottom-name').textContent=tagName(0);
-    $('go-top-name').textContent=tagName(1);
+    $('go-bottom-name').textContent=trW(tagName(0));
+    $('go-top-name').textContent=trW(tagName(1));
     $('go-bottom-caps').textContent=caps[0];
     $('go-top-caps').textContent=caps[1];
     $('go-bottom-dot').classList.toggle('active', turnSeat===0 && !over);
@@ -2155,8 +2434,9 @@ const Go = (()=>{
         $('go-result-title').style.color=iWon?'var(--yellow)':'var(--red)';
         if(Cafe.isActive()) Cafe.reward(iWon);
       }
-      $('go-result-title').textContent=title;
-      $('go-result-sub').innerHTML=`⚫ 흑: <b>${sc.black}</b>집 · ⚪ 백: <b>${sc.white}</b>집 (덤 6.5 포함)<br>${blackWin?'흑':'백'} ${Math.abs(sc.black-sc.white).toFixed(1)}집 승`;
+      $('go-result-title').textContent=tr(title);
+      const L_=LANG, gt=L_==='ko'?['흑','백','집',' (덤 6.5 포함)','집 승']:L_==='ja'?['黒','白','目','（コミ6.5込み）','目勝ち']:['Black','White',' pts',' (incl. komi 6.5)',' pt win'];
+      $('go-result-sub').innerHTML=`⚫ ${gt[0]}: <b>${sc.black}</b>${gt[2]} · ⚪ ${gt[1]}: <b>${sc.white}</b>${gt[2]}${gt[3]}<br>${blackWin?gt[0]:gt[1]} ${Math.abs(sc.black-sc.white).toFixed(1)}${gt[4]}`;
       $('go-result-overlay').classList.add('show');
       Cafe.decorateResult('go-result-overlay');
     }, 500);
@@ -2233,7 +2513,7 @@ const Cafe = (()=>{
   let cmTimer;
   function cMsg(text, ms=2400){
     const m=$('cafe-msg'); if(!m) return;
-    m.textContent=text; m.classList.add('show');
+    m.textContent=tr(text); m.classList.add('show');
     clearTimeout(cmTimer);
     cmTimer=setTimeout(()=>m.classList.remove('show'), ms);
   }
@@ -2249,7 +2529,7 @@ const Cafe = (()=>{
     reset();
     isHost=true; mySeat=0; members=['손님1']; phase='setup';
     Net.host({
-      code: c=>{ $('room-code').textContent=c; $('ol-host-status').textContent='파티원 대기 중... (혼자여도 시작 가능)'; renderSetup(); },
+      code: c=>{ $('room-code').textContent=c; $('ol-host-status').textContent=tr('파티원 대기 중... (혼자여도 시작 가능)'); renderSetup(); },
       join: conn=>{
         if(phase!=='setup'){ try{conn.close();}catch(e){} return; }
         members.push('손님'+(members.length+1));
@@ -2260,17 +2540,17 @@ const Cafe = (()=>{
       },
       data: (d,from)=> routeNet(d, from),
       leave: seat=> onGuestLeave(seat),
-      error: ()=>{ $('ol-host-status').textContent='오류 — 다시 시도해 주세요'; }
+      error: ()=>{ $('ol-host-status').textContent=tr('오류 — 다시 시도해 주세요'); }
     });
   }
   function joinParty(code){
     reset();
     isHost=false; phase='setup';
     Net.join(code, {
-      open: ()=>{ $('ol-join-status').textContent='접속 완료! 호스트가 결제를 시작하면 진행돼요'; },
+      open: ()=>{ $('ol-join-status').textContent=tr('접속 완료! 호스트가 결제를 시작하면 진행돼요'); },
       data: (d)=> routeNet(d, 0),
       close: ()=> onHostClosed(),
-      error: ()=>{ $('ol-join-status').textContent='접속 실패 — 코드를 확인해 주세요'; }
+      error: ()=>{ $('ol-join-status').textContent=tr('접속 실패 — 코드를 확인해 주세요'); }
     });
   }
   function startSolo(){
@@ -2287,11 +2567,15 @@ const Cafe = (()=>{
     members.forEach((n,i)=>{
       const c=document.createElement('span');
       c.className='member-chip';
-      c.innerHTML=(i===0?'<span class="host-star">★</span>':'')+n;
+      c.innerHTML=(i===0?'<span class="host-star">★</span>':'')+trW(n);
       r.appendChild(c);
     });
     $('ol-start-pay').style.display = 'inline-block';
-    $('ol-start-pay').textContent = `💳 결제 시작 (${members.length}인 · 1인당 ${Wallet.fmt(PER[members.length])}원)`;
+    {
+      const n=members.length, pp=money(Wallet.fmt(PER[n]));
+      $('ol-start-pay').textContent = LANG==='ko' ? `💳 결제 시작 (${n}인 · 1인당 ${pp})`
+        : LANG==='ja' ? `💳 決済開始（${n}人 · 1人${pp}）` : `💳 Start payment (${n}P · ${pp} each)`;
+    }
   }
 
   /* ---------- 결제 ---------- */
@@ -2309,9 +2593,12 @@ const Cafe = (()=>{
     if(paid.length!==NP()) paid=members.map(()=>false);
     myPaid=false;
     $('online-overlay').classList.remove('show');
-    $('pay-n').textContent=NP();
-    $('pay-total').textContent=Wallet.fmt(TOTAL[NP()]);
-    $('pay-per').textContent=Wallet.fmt(per);
+    {
+      const n=NP(), tot=money(Wallet.fmt(TOTAL[n])), pp=`<b style="color:var(--yellow)">${money(Wallet.fmt(per))}</b>`;
+      $('pay-line').innerHTML = LANG==='ko' ? `${n}인 파티 · 총 <b>${tot}</b><br>1인당 ${pp}`
+        : LANG==='ja' ? `${n}人パーティー · 合計 <b>${tot}</b><br>1人あたり ${pp}`
+        : `${n}P party · total <b>${tot}</b><br>${pp} each`;
+    }
     $('pay-status').textContent='';
     renderPayList();
     $('pay-overlay').classList.add('show');
@@ -2322,11 +2609,12 @@ const Cafe = (()=>{
       const c=document.createElement('div');
       c.className='member-chip'+(paid[i]?' paid':'');
       c.style.justifyContent='space-between';
-      c.innerHTML=`${i===0?'★ ':''}${n} <b>${paid[i]?'✅ 결제 완료':'⏳ 대기 중'}</b>`;
+      c.innerHTML=`${i===0?'★ ':''}${trW(n)} <b>${tr(paid[i]?'✅ 결제 완료':'⏳ 대기 중')}</b>`;
       l.appendChild(c);
     });
     $('pay-btn').disabled = myPaid;
-    $('pay-btn').textContent = myPaid ? '결제 완료 — 대기 중...' : `💳 ${Wallet.fmt(per)}원 결제하기`;
+    $('pay-btn').textContent = myPaid ? tr('결제 완료 — 대기 중...')
+      : (LANG==='ko' ? `💳 ${money(Wallet.fmt(per))} 결제하기` : LANG==='ja' ? `💳 ${money(Wallet.fmt(per))} 決済する` : `💳 Pay ${money(Wallet.fmt(per))}`);
   }
   function doPay(){
     if(myPaid || phase!=='pay') return;
@@ -2370,7 +2658,7 @@ const Cafe = (()=>{
     members.forEach((n,i)=>{
       const c=document.createElement('span');
       c.className='member-chip';
-      c.innerHTML=(i===0?'<span class="host-star">★</span>':'')+n+(i===mySeat?' (나)':'');
+      c.innerHTML=(i===0?'<span class="host-star">★</span>':'')+trW(n)+(i===mySeat?(LANG==='ko'?' (나)':LANG==='ja'?'（自分）':' (me)'):'');
       mrow.appendChild(c);
     });
     const grid=$('vote-grid'); grid.innerHTML='';
@@ -2380,7 +2668,14 @@ const Cafe = (()=>{
     avail.forEach(g=>{
       const card=document.createElement('div');
       card.className='vote-card'+(votes[mySeat]===g.id?' myvote':'');
-      card.innerHTML=`<div class="vname">${g.name}</div><div class="vinfo">${g.desc}${NP()===1?' · AI 대전':''}</div>`;
+      {
+        const emoji=g.name.split(' ')[0];
+        const gn={uno:['UNO','UNO','UNO'],quo:['쿼리도','Quoridor','コリドール'],gmk:['오목','Gomoku','五目並べ'],go:['바둑','Go','囲碁']}[g.id];
+        const li=LANG==='ko'?0:LANG==='en'?1:2;
+        const desc=g.desc.replace('인', LANG==='ko'?'인':LANG==='ja'?'人':'P');
+        const ai=NP()===1 ? (LANG==='ko'?' · AI 대전':LANG==='ja'?' · AI対戦':' · vs AI') : '';
+        card.innerHTML=`<div class="vname">${emoji} ${gn[li]}</div><div class="vinfo">${desc}${ai}</div>`;
+      }
       if(cnt[g.id]){ const b=document.createElement('div'); b.className='vcnt'; b.textContent=cnt[g.id]; card.appendChild(b); }
       card.addEventListener('click', ()=> castVote(g.id));
       grid.appendChild(card);
@@ -2389,7 +2684,7 @@ const Cafe = (()=>{
     FOODS.forEach(f=>{
       const b=document.createElement('div');
       b.className='food-item';
-      b.textContent=`${f.e} ${f.n} ${Wallet.fmt(f.p)}원`;
+      b.textContent=`${f.e} ${foodTr(f.n)} ${money(Wallet.fmt(f.p))}`;
       b.addEventListener('click', ()=> orderFood(f));
       fb.appendChild(b);
     });
@@ -2404,9 +2699,9 @@ const Cafe = (()=>{
       const cnt={}; Object.values(votes).forEach(g=>cnt[g]=(cnt[g]||0)+1);
       const mx=Math.max(...Object.values(cnt));
       const top=Object.keys(cnt).filter(g=>cnt[g]===mx);
-      el.textContent = top.length>1 ? `⚖️ 동률! ${s}초 후 랜덤 결정 (투표 변경 가능)` : `⏱ ${s}초 후 시작!`;
+      el.textContent = tr(top.length>1 ? `⚖️ 동률! ${s}초 후 랜덤 결정 (투표 변경 가능)` : `⏱ ${s}초 후 시작!`);
     } else {
-      el.textContent = `(${n}/${NP()} 투표)`;
+      el.textContent = tr(`(${n}/${NP()} 투표)`);
     }
   }
 
@@ -2525,11 +2820,16 @@ const Cafe = (()=>{
     const act=isActive();
     if(cafeBtn) cafeBtn.style.display = act?'inline-block':'none';
     if(restart) restart.style.display = act?'none':'inline-block';
-    if(menuBtn) menuBtn.textContent = act?'🚪 파티 나가기':'메뉴로';
+    if(menuBtn) menuBtn.textContent = act ? (LANG==='ko'?'🚪 파티 나가기':LANG==='ja'?'🚪 退出':'🚪 Leave party')
+      : (LANG==='ko'?'메뉴로':LANG==='ja'?'メニューへ':'To menu');
     if(act && lastReward){
       const sub=panel.querySelector('.result-sub');
       if(sub && !sub.dataset.rewarded){
-        sub.innerHTML += `<br>💰 <b style="color:var(--yellow)">+${Wallet.fmt(lastReward)}원</b> 획득! (잔액 ${Wallet.fmt(Wallet.get())}원)`;
+        sub.innerHTML += LANG==='ko'
+          ? `<br>💰 <b style="color:var(--yellow)">+${money(Wallet.fmt(lastReward))}</b> 획득! (잔액 ${money(Wallet.fmt(Wallet.get()))})`
+          : LANG==='ja'
+          ? `<br>💰 <b style="color:var(--yellow)">+${money(Wallet.fmt(lastReward))}</b> 獲得！（残高 ${money(Wallet.fmt(Wallet.get()))}）`
+          : `<br>💰 <b style="color:var(--yellow)">+${money(Wallet.fmt(lastReward))}</b> earned! (balance ${money(Wallet.fmt(Wallet.get()))})`;
         sub.dataset.rewarded='1';
         setTimeout(()=>{ delete sub.dataset.rewarded; }, 100);
       }
@@ -2665,7 +2965,7 @@ const Admin = (()=>{
   let toastTimer;
   window.moneyToast = function(text){
     const t=$('money-toast');
-    t.textContent=text;
+    t.textContent=tr(text);
     t.classList.add('show');
     Wallet.renderAll();
     clearTimeout(toastTimer);
@@ -2682,7 +2982,7 @@ const Admin = (()=>{
       if(kbuf==='admin'){ kbuf=''; askPw(); }
     }
   });
-/* 어드민 비밀번호인데 이거 보고 비밀번호 가져가는 새끼는 고아라고 하네 */
+
   const ADMIN_PW='0922';
   function askPw(){
     $('adm-pw-in').value='';
@@ -2695,7 +2995,7 @@ const Admin = (()=>{
       $('adm-pw-overlay').classList.remove('show');
       open();
     } else {
-      $('adm-pw-status').textContent='❌ 비밀번호가 틀렸어요';
+      $('adm-pw-status').textContent=tr('❌ 비밀번호가 틀렸어요');
       $('adm-pw-status').style.color='var(--red)';
       $('adm-pw-in').value='';
     }
@@ -2742,13 +3042,13 @@ const Admin = (()=>{
     const p=Cafe.getParty();
     box.innerHTML='';
     if(!p.inParty){
-      box.innerHTML='<span style="opacity:.6; font-size:13px;">파티 중이 아니에요 (파티에 들어가면 멤버가 표시돼요)</span>';
+      box.innerHTML='<span style="opacity:.6; font-size:13px;">'+tr('파티 중이 아니에요 (파티에 들어가면 멤버가 표시돼요)')+'</span>';
       return;
     }
     p.names.forEach((n,i)=>{
       const b=document.createElement('button');
       b.className='adm-mini-btn';
-      b.textContent=(i===p.mySeat?'😎 ':'')+n+(i===p.mySeat?' (나)':'');
+      b.textContent=(i===p.mySeat?'😎 ':'')+trW(n)+(i===p.mySeat?(LANG==='ko'?' (나)':LANG==='ja'?'（自分）':' (me)'):'');
       b.addEventListener('click', ()=>{
         const amt=readAmt('adm-amt-party');
         if(amt===null){ moneyToast('금액을 올바르게 입력하세요'); return; }
@@ -2785,18 +3085,18 @@ const Admin = (()=>{
   }
   $('adm-code-gen').addEventListener('click', ()=>{
     const n=readAmt('adm-code-amt');
-    if(n===null){ $('adm-code-out').textContent='금액을 입력하세요'; return; }
-    $('adm-code-out').textContent = enc(n) + `  (${Wallet.fmt(n)}원)`;
+    if(n===null){ $('adm-code-out').textContent=tr('금액을 입력하세요'); return; }
+    $('adm-code-out').textContent = enc(n) + `  (${money(Wallet.fmt(n))})`;
   });
   $('adm-code-use').addEventListener('click', ()=>{
     const raw=$('adm-code-in').value.trim().toUpperCase().split(' ')[0];
     const st=$('adm-code-status');
     const n=dec(raw);
-    if(n===null){ st.textContent='❌ 잘못된 코드예요'; st.style.color='var(--red)'; return; }
-    if(usedList().includes(raw)){ st.textContent='❌ 이미 사용한 코드예요'; st.style.color='var(--red)'; return; }
+    if(n===null){ st.textContent=tr('❌ 잘못된 코드예요'); st.style.color='var(--red)'; return; }
+    if(usedList().includes(raw)){ st.textContent=tr('❌ 이미 사용한 코드예요'); st.style.color='var(--red)'; return; }
     markUsed(raw);
     Wallet.add(n);
-    st.textContent=`✅ +${Wallet.fmt(n)}원 지급 완료!`;
+    st.textContent=tr(`✅ +${Wallet.fmt(n)}원 지급 완료!`);
     st.style.color='var(--green)';
     $('adm-code-in').value='';
     moneyToast(`🎟️ 상품권 +${Wallet.fmt(n)}원!`);
